@@ -1,5 +1,7 @@
 //#region constants
 import type {
+    CreatorStatus,
+    CreatorVideosResponse,
     FloatplaneSource,
     FP_Delivery,
     FP_DeliveryVariant,
@@ -11,8 +13,15 @@ import type {
     State
 } from "./types.js"
 
-const PLATFORM = "Vimeo" as const
+const PLATFORM = "Floatplane" as const
 const USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64; rv:124.0) Gecko/20100101 Firefox/124.0" as const
+
+const PLATFORM_URL = "https://www.floatplane.com" as const
+const BASE_API_URL = "https://www.floatplane.com/api" as const
+const SUBSCRIPTIONS_URL = `${BASE_API_URL}/v3/user/subscriptions` as const
+const POST_URL = `${BASE_API_URL}/v3/content/post` as const
+const DELIVERY_URL = `${BASE_API_URL}/v3/delivery/info` as const
+const LIST_URL = `${BASE_API_URL}/v3/content/creator/list` as const
 
 const HARDCODED_ZERO = 0 as const
 const HARDCODED_EMPTY_STRING = "" as const
@@ -43,9 +52,6 @@ const local_source: FloatplaneSource = {
     getHome,
     isContentDetailsUrl,
     getContentDetails,
-    getContentRecommendations,
-    isChannelUrl,
-    getChannel
 }
 init_source(local_source)
 function init_source<
@@ -62,6 +68,7 @@ function init_source<
 }
 //#endregion
 
+//#region enable
 function enable(conf: SourceConfig, settings: Settings, saved_state?: string | null) {
     if (IS_TESTING) {
         log("IS_TESTING true")
@@ -82,74 +89,166 @@ function enable(conf: SourceConfig, settings: Settings, saved_state?: string | n
 
     console.log(USER_AGENT, HARDCODED_ZERO, HARDCODED_EMPTY_STRING, EMPTY_AUTHOR, local_settings, local_state)
 }
+//#endregion
 
 function disable() {
     log("Floatplane log: disabling")
 }
 
+function saveState() {
+    return JSON.stringify(local_state)
+}
+
+//#region home
+function getHome(): ContentPager {
+    const response: FP_Subscription[] = JSON.parse(local_http.GET(SUBSCRIPTIONS_URL, {}, false).body)
+
+    const limit = 20
+    const pager = new CreatorPager(response.map(c => c.creator), limit)
+    return pager
+}
+function ToThumbnails(thumbs: FP_Parent_Image | null): Thumbnails {
+    if (thumbs == null)
+        return new Thumbnails([])
+
+    return new Thumbnails([thumbs, ...thumbs.childImages].map(
+        (t) => new Thumbnail(t.path, t.height)
+    ))
+}
+
+function ToVideoEntry(blog: FP_Post): PlatformVideo | null {
+    if (blog.metadata.hasVideo) {
+        return new PlatformVideo({
+            id: new PlatformID("Floatplane", blog.id, plugin.config.id),
+            name: blog.title,
+            thumbnails: ToThumbnails(blog.thumbnail),
+            author: new PlatformAuthorLink(
+                new PlatformID("Floatplane", blog.channel.creator + ":" + blog.channel.id, plugin.config.id),
+                blog.channel.title,
+                ChannelUrlFromBlog(blog),
+                blog.channel.icon?.path || ""
+            ),
+            datetime: new Date(blog.releaseDate).getTime() / 1000,
+            duration: blog.metadata.videoDuration,
+            viewCount: blog.likes + blog.dislikes,          // Floatplane does not support a view count, so this is a proxy
+            url: PLATFORM_URL + "/post/" + blog.id,
+            shareUrl: PLATFORM_URL + "/post/" + blog.id,
+            isLive: false                                   // TODO: Support live videos
+        })
+    }
+
+    // TODO: Images
+    // TODO: Audio
+    // TODO: Gallery
+    // throw new ScriptException("The following blog has no video: " + blog.id);
+    return null
+}
+function ChannelUrlFromBlog(blog: FP_Post): string {
+    return PLATFORM_URL + "/channel/" + blog.creator.urlname + "/home/" + blog.channel.urlname
+}
+
+class CreatorPager extends ContentPager {
+    private readonly creators: { [creator: string]: CreatorStatus }
+    constructor(creator_ids: string[], private readonly limit: number) {
+        const url = new URL(LIST_URL)
+        url.searchParams.set("limit", limit.toString())
+        creator_ids.forEach((creator_id, n) => url.searchParams.set(`ids[${n}]`, creator_id))
+
+        const response: CreatorVideosResponse = JSON.parse(local_http.GET(url.toString(), {}, false).body)
+
+        const creators: { [creator: string]: CreatorStatus } = {}
+        let has_more = false
+        for (const data of response.lastElements) {
+            creators[data.creatorId] = data
+            has_more ||= data.moreFetchable
+        }
+
+        const results = response.blogPosts.map(ToVideoEntry).filter(x => x !== null)
+
+        super(results, has_more)
+        this.creators = creators
+    }
+    override nextPage(this: CreatorPager) {
+        const url = new URL(LIST_URL)
+        url.searchParams.set("limit", this.limit.toString())
+        Object.values(this.creators).forEach((creator, n) => {
+            url.searchParams.set(`ids[${n}]`, creator.creatorId)
+
+            if (creator.blogPostId) {
+                url.searchParams.set(`fetchAfter[${n}][creatorId]`, creator.creatorId)
+                url.searchParams.set(`fetchAfter[${n}][blogPostId]`, creator.blogPostId)
+                url.searchParams.set(`fetchAfter[${n}][moreFetchable]`, creator.moreFetchable.toString())
+            }
+        })
+
+        const response: CreatorVideosResponse = JSON.parse(local_http.GET(url.toString(), {}, false).body)
+
+        this.hasMore = false
+        for (const data of response.lastElements) {
+            this.creators[data.creatorId] = data
+            this.hasMore ||= data.moreFetchable
+        }
+
+        this.results = response.blogPosts.map(ToVideoEntry).filter(x => x !== null)
+        return this
+    }
+    override hasMorePagers(this: CreatorPager): boolean {
+        return this.hasMore
+    }
+}
+//#endregion
+
+//#region 
 function isContentDetailsUrl(url: string) {
     return /^https?:\/\/(www\.)?floatplane\.com\/post\/[\w\d]+$/.test(url)
 }
-
-source.getHome = function () {
-    let [resp, err] = FP.Fetch(FP.API.USER.SUBSCRIPTIONS, {})
-    if (err) {
-        throw new ScriptException("Failed to fetch subscriptions: " + err.code)
-    }
-
-    const pager = new CreatorPager((resp as FP_Subscription[]).map(c => c.creator))
-    return pager
-}
-
-source.getContentDetails = (url: string): PlatformVideoDetails => {
+function getContentDetails(url: string): PlatformContentDetails {
     const post_id: string = url.split("/").pop() as string
 
-    let [r, err] = FP.Fetch(FP.API.CONTENT.POST, { id: post_id })
-    if (err) {
-        throw new ScriptException("Failed to fetch post " + post_id + ": " + err.code)
-    }
+    const api_url = new URL(POST_URL)
+    api_url.searchParams.set("id", post_id)
 
-    const resp: FP_Post = r as FP_Post
+    const response: FP_Post = JSON.parse(local_http.GET(api_url.toString(), {}, false).body)
 
-    if (resp.metadata.hasVideo) {
-        if (resp.metadata.hasAudio || resp.metadata.hasPicture || resp.metadata.hasGallery) {
+    if (response.metadata.hasVideo) {
+        if (response.metadata.hasAudio || response.metadata.hasPicture || response.metadata.hasGallery) {
             bridge.toast("Mixed content not supported; only showing video")
         }
-        const videos = ToGrayjayVideoSource(resp.videoAttachments)
+        const videos = ToGrayjayVideoSource(response.videoAttachments)
         console.log(videos)
 
         return new PlatformVideoDetails({
-            id: new PlatformID(FP.PLATFORM, post_id, plugin.config.id),
-            name: resp.title,
-            description: resp.text,
-            thumbnails: ToThumbnails(resp.thumbnail),
+            id: new PlatformID(PLATFORM, post_id, plugin.config.id),
+            name: response.title,
+            description: response.text,
+            thumbnails: ToThumbnails(response.thumbnail),
             author: new PlatformAuthorLink(
-                new PlatformID(FP.PLATFORM, resp.channel.creator + ":" + resp.channel.id, plugin.config.id),
-                resp.channel.title,
-                FP.ChannelUrlFromBlog(resp),
-                resp.channel.icon?.path || ""
+                new PlatformID(PLATFORM, response.channel.creator + ":" + response.channel.id, plugin.config.id),
+                response.channel.title,
+                ChannelUrlFromBlog(response),
+                response.channel.icon?.path || ""
             ),
-            datetime: FP.Timestamp(resp.releaseDate),
-            uploadDate: FP.Timestamp(resp.releaseDate),
-            duration: resp.metadata.videoDuration,
-            viewCount: resp.likes + resp.dislikes, // TODO: implement view count
-            url: FP.PLATFORM_URL + "/post/" + resp.id,
+            datetime: new Date(response.releaseDate).getTime() / 1000,
+            duration: response.metadata.videoDuration,
+            viewCount: response.likes + response.dislikes, // TODO: implement view count
+            url: PLATFORM_URL + "/post/" + response.id,
+            shareUrl: PLATFORM_URL + "/post/" + response.id,
             isLive: false,
             video: videos,
-            rating: new RatingLikesDislikes(resp.likes, resp.dislikes),
+            rating: new RatingLikesDislikes(response.likes, response.dislikes),
             subtitles: []
         })
     }
 
-    if (resp.metadata.hasAudio) {
+    if (response.metadata.hasAudio) {
         throw new ScriptException("Audio content not supported")
     }
 
-    if (resp.metadata.hasPicture) {
+    if (response.metadata.hasPicture) {
         throw new ScriptException("Picture content not supported")
     }
 
-    if (resp.metadata.hasGallery) {
+    if (response.metadata.hasGallery) {
         throw new ScriptException("Gallery content not supported")
     }
 
@@ -158,14 +257,17 @@ source.getContentDetails = (url: string): PlatformVideoDetails => {
 
 /** Returns the associated Grayjay stream object */
 function ToGrayjayVideoStream(
-    video_index: number, group_index: number,
-    duration: number, origin: string,
-    title: string, variant: FP_DeliveryVariant
+    video_index: number,
+    group_index: number,
+    duration: number,
+    origin: string,
+    title: string,
+    variant: FP_DeliveryVariant
 ): VideoUrlSource | HLSSource | DashSource {
-    let letters: string = " abcdefghijklmnopqrstuvwxyz"
-    let group_letter = letters[group_index % letters.length]
+    const letters: string = " abcdefghijklmnopqrstuvwxyz"
+    const group_letter = letters[group_index % letters.length]
 
-    switch (settings.streamFormat) {
+    switch (local_settings.stream_format) {
         case "flat":
             throw new ScriptException("Flat streams are not implemented (possibly encrypted)")
         /* return new VideoUrlSource({
@@ -180,6 +282,7 @@ function ToGrayjayVideoStream(
         }); */
 
         case "dash.m4s":
+            throw new ScriptException("Dash streams are not implemented (no streams from Floatplane)")
         // fall through
         case "dash.mpegts":
             throw new ScriptException("Dash streams are not implemented (no streams from Floatplane)")
@@ -192,10 +295,10 @@ function ToGrayjayVideoStream(
         priority: false
     })
 
-    const enc_key = FP.getHlsToken(origin + variant.url)
-    const executor = new FP.FP_HLS_Executor(origin + variant.url, enc_key)
+    // const enc_key = FP.getHlsToken(origin + variant.url)
+    // const executor = new FP.FP_HLS_Executor(origin + variant.url, enc_key)
 
-    source.getRequestExecutor = () => executor
+    // source.getRequestExecutor = () => executor
 
     // source.getRequestExecutor = () => { return {
     //     urlPrefix: (origin + variant.url).split("/chunk.m3u8")[0] + "/",
@@ -221,22 +324,22 @@ function ToGrayjayVideoStream(
     return source
 }
 
-function strToByteArr(str: string): Uint8Array {
-    const buf = new ArrayBuffer(str.length)
-    const bufView = new Uint8Array(buf)
-    for (let i = 0, strLen = str.length; i < strLen; i++) {
-        bufView[i] = str.charCodeAt(i)
-    }
-    return bufView
-}
+// function strToByteArr(str: string): Uint8Array {
+//     const buf = new ArrayBuffer(str.length)
+//     const bufView = new Uint8Array(buf)
+//     for (let i = 0, strLen = str.length; i < strLen; i++) {
+//         bufView[i] = str.charCodeAt(i)
+//     }
+//     return bufView
+// }
 
 /** Returns video streams from an [FP_Post] */
 function ToGrayjayVideoSource(attachments: FP_VideoAttachment[]): VideoSourceDescriptor {
-    let videos: IVideoSource[] = []
-    let errors: string[] = []
+    const videos: IVideoSource[] = []
+    const errors: string[] = []
     let video_index: number = 0
 
-    for (var video of attachments) {
+    for (const video of attachments) {
         video_index++
 
         if (!video.isAccessible) {
@@ -251,59 +354,59 @@ function ToGrayjayVideoSource(attachments: FP_VideoAttachment[]): VideoSourceDes
             continue
         }
 
-        let [resp, err] = FP.Fetch(FP.API.DELIVERY.INFO, {
-            // TODO: Support live streams
-            scenario: settings.streamFormat == "flat" ? "download" : "onDemand",
-            entityId: video.id,
-            outputKind: settings.streamFormat || "hls.mpegts"
-        })
+        const url = new URL(DELIVERY_URL)
+        url.searchParams.set("scenario", local_settings.stream_format == "flat" ? "download" : "onDemand")
+        url.searchParams.set("entityId", video.id)
+        url.searchParams.set("outputKind", local_settings.stream_format)
 
-        if (err) {
-            errors.push(`Video ${video_index}:${video.id} is inaccessible`)
-            bridge.toast(`Video ${video_index}:${video.id} is inaccessible`)
-            continue
-        }
+        const response: FP_Delivery = JSON.parse(local_http.GET(url.toString(), {}, false).body)
 
-        let delivery: FP_Delivery = resp as FP_Delivery
         let group_index: number = 0
 
-        if (delivery.groups.length == 0) {
+        if (response.groups.length == 0) {
             errors.push(`Video ${video_index}:${video.id} has no groups`)
             bridge.toast(`Video ${video_index}:${video.id} has no groups`)
             continue
         }
 
-        for (var group of delivery.groups) {
+        for (const group of response.groups) {
             group_index++
             if (group.variants.length == 0) {
                 errors.push(`Video ${video_index}:${video.id}:${group_index} has no variants`)
-                if (settings.logLevel)
+                if (local_settings.log_level)
                     bridge.toast(`Video ${video_index}:${video.id}:${group_index} has no variants`)
                 continue
             }
 
-            for (var variant of group.variants) {
+            for (const variant of group.variants) {
                 if (variant.hidden) {
                     errors.push(`Video ${video_index}:${video.id}:${group_index}:${variant.name} is hidden`)
-                    if (settings.logLevel)
+                    if (local_settings.log_level)
                         bridge.toast(`Video ${video_index}:${video.id}:${group_index}:${variant.name} is hidden`)
                     continue
                 }
 
                 if (!variant.enabled) {
                     errors.push(`Video ${video_index}:${video.id}:${group_index}:${variant.name} is disabled`)
-                    if (settings.logLevel)
+                    if (local_settings.log_level)
                         bridge.toast(`Video ${video_index}:${video.id}:${group_index}:${variant.name} is disabled`)
                     continue
                 }
 
-                if (settings.logLevel)
+                if (local_settings.log_level)
                     bridge.toast(`SUCCESS: Video ${video_index}:${video.id}:${group_index}:${variant.name}`)
+
+                const origin = group.origins[0]
+                if (origin === undefined) {
+                    throw new ScriptException("unreachable")
+                }
 
                 videos.push(ToGrayjayVideoStream(
                     video_index, group_index,
-                    video.duration, group.origins[0].url,
-                    video.title, variant
+                    video.duration,
+                    origin.url,
+                    video.title,
+                    variant
                 ))
             }
         }
@@ -316,101 +419,7 @@ function ToGrayjayVideoSource(attachments: FP_VideoAttachment[]): VideoSourceDes
     log(videos)
     return new VideoSourceDescriptor(videos)
 }
-
-function ToThumbnails(thumbs: FP_Parent_Image | null): Thumbnails {
-    if (thumbs == null)
-        return new Thumbnails([])
-
-    return new Thumbnails([thumbs, ...thumbs.childImages].map(
-        (t) => new Thumbnail(t.path, t.height)
-    ))
-}
-
-function ToVideoEntry(blog: FP_Post): PlatformVideo | null {
-    if (blog.metadata.hasVideo) {
-        return new PlatformVideo({
-            id: new PlatformID("Floatplane", blog.id, plugin.config.id),
-            name: blog.title,
-            thumbnails: ToThumbnails(blog.thumbnail),
-            description: blog.text,
-            author: new PlatformAuthorLink(
-                new PlatformID("Floatplane", blog.channel.creator + ":" + blog.channel.id, plugin.config.id),
-                blog.channel.title,
-                FP.ChannelUrlFromBlog(blog),
-                blog.channel.icon?.path || ""
-            ),
-            datetime: FP.Timestamp(blog.releaseDate),
-            uploadDate: FP.Timestamp(blog.releaseDate),
-            duration: blog.metadata.videoDuration,
-            viewCount: blog.likes + blog.dislikes,          // Floatplane does not support a view count, so this is a proxy
-            url: FP.PLATFORM_URL + "/post/" + blog.id,
-            isLive: false                                   // TODO: Support live videos
-        })
-    }
-
-    // TODO: Images
-    // TODO: Audio
-    // TODO: Gallery
-    // throw new ScriptException("The following blog has no video: " + blog.id);
-    return null
-}
-
-interface CreatorPager_Memory {
-    creatorId: string,
-    blogPostId: string | null,
-    moreFetchable: boolean
-}
-
-class CreatorPager extends ContentPager {
-    _LIMIT = 20;
-    _creators: { [creator: string]: CreatorPager_Memory } = {};
-
-    constructor(creators: string[]) {
-        super([], true, null)
-        this._creators = {}
-        for (var creator of creators) {
-            this._creators[creator] = {
-                creatorId: creator,
-                blogPostId: null,
-                moreFetchable: true,
-            }
-        }
-    }
-
-    nextPage() {
-        const params = {
-            limit: this._LIMIT
-        }
-
-        let n = 0
-        for (var creator of Object.values(this._creators)) {
-            params[`ids[${n}]`] = creator.creatorId
-            if (creator.blogPostId) {
-                params[`fetchAfter[${n}][creatorId]`] = creator.creatorId
-                params[`fetchAfter[${n}][blogPostId]`] = creator.blogPostId
-                params[`fetchAfter[${n}][moreFetchable]`] = creator.moreFetchable
-            }
-            n++
-        }
-
-        let [resp, err] = FP.Fetch(FP.API.CONTENT.CREATOR.LIST, params)
-        if (err) {
-            log(err)
-            log(params)
-            throw new ScriptException("Failed to fetch subscriptions: " + err.code)
-        }
-
-        this.hasMore = false
-        for (var data of resp.lastElements) {
-            this._creators[data.creatorId] = data
-            this.hasMore ||= data.moreFetchable
-        }
-
-        const ret = resp.blogPosts.map(ToVideoEntry).filter(x => x !== null)
-        this.results = ret
-        return this
-    }
-}
+//#endregion
 
 //#region utilities
 /**

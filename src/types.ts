@@ -1,7 +1,7 @@
 //#region custom types
 export type Settings = {
-    stream_format: string;
-    log_level: string;
+    stream_format: "hls.mpegts" | "hls.fmp4" | "dash.mpegts" | "dash.m4s" | "flat"
+    log_level: boolean
 }
 
 export type FloatplaneSource = Required<Omit<Source<
@@ -30,6 +30,9 @@ export type FloatplaneSource = Required<Omit<Source<
     | "getPlaybackTracker"
     | "getUserPlaylists"
     | "getUserSubscriptions"
+    | "getContentRecommendations"
+    | "isChannelUrl"
+    | "getChannel"
 >>
 
 export type State = unknown
@@ -37,223 +40,230 @@ export type State = unknown
 
 //#region JSON types
 export interface FP_Subscription {
-    startDate: string;
-    endDate: string;
-    paymentID: number;
-    interval: string;
-    paymentCancelled: boolean;
-    plan: FP_SubscriptionPlans;
-    creator: string;
+    startDate: string
+    endDate: string
+    paymentID: number
+    interval: string
+    paymentCancelled: boolean
+    plan: FP_SubscriptionPlans
+    creator: string
 }
 
 interface FP_Creator {
-    id: string;
-    owner: string;
-    title: string;
-    urlname: string;
-    description: string;
-    about: string;
-    category: FP_Creator_Category | string;
-    cover: FP_Parent_Image | null;
-    icon: FP_Parent_Image | null;
-    liveStream: FP_LiveStream | null;
-    subscriptionPlans: FP_SubscriptionPlans[] | null;
-    discoverable: boolean;
-    subscriberCountDisplay: string;
-    incomeDisplay: boolean;
-    socialLinks?: object;
+    id: string
+    owner: string
+    title: string
+    urlname: string
+    description: string
+    about: string
+    category: FP_Creator_Category | string
+    cover: FP_Parent_Image | null
+    icon: FP_Parent_Image | null
+    liveStream: FP_LiveStream | null
+    subscriptionPlans: FP_SubscriptionPlans[] | null
+    discoverable: boolean
+    subscriberCountDisplay: string
+    incomeDisplay: boolean
+    socialLinks?: object
 }
 
 interface FP_Channel {
-    id: string;
-    creator: string;
-    title: string;
-    urlname: string;
-    about: string;
-    order: number;
-    cover: FP_Parent_Image | null;
-    card: FP_Parent_Image | null;
-    icon: FP_Parent_Image | null;
-    tags: any[];
+    id: string
+    creator: string
+    title: string
+    urlname: string
+    about: string
+    order: number
+    cover: FP_Parent_Image | null
+    card: FP_Parent_Image | null
+    icon: FP_Parent_Image | null
 }
 
 interface FP_Creator_Category {
-    title: string;
+    title: string
 }
 
 interface FP_Image {
-    width: number;
-    height: number;
-    path: string;
+    width: number
+    height: number
+    path: string
 }
 
 export interface FP_Parent_Image extends FP_Image {
-    childImages: FP_Image[];
+    childImages: FP_Image[]
 }
 
 interface FP_LiveStream {
-    id: string;
-    title: string;
-    description: string;
-    thumbnail: FP_Parent_Image | null;
-    owner: string;
-    streamPath: string;
-    offline: FP_LiveStream_Offline | null;
+    id: string
+    title: string
+    description: string
+    thumbnail: FP_Parent_Image | null
+    owner: string
+    streamPath: string
+    offline: FP_LiveStream_Offline | null
 }
 
 interface FP_LiveStream_Offline {
-    title: string;
-    description: string;
-    thumbnail: FP_Parent_Image | null;
+    title: string
+    description: string
+    thumbnail: FP_Parent_Image | null
 }
 
 interface FP_SubscriptionPlans {
-    id: string;
-    title: string;
-    description: string;
-    price: string;
-    priceYearly: string;
-    currency: string;
-    logo: FP_Parent_Image | null;
-    interval: string;
-    featured: boolean;
-    allowGrandfatheredAccess: boolean;
-    discordServers: any[];
-    discordRoles: any[];
+    id: string
+    title: string
+    description: string
+    price: string
+    priceYearly: string
+    currency: string
+    logo: FP_Parent_Image | null
+    interval: string
+    featured: boolean
+    allowGrandfatheredAccess: boolean
 }
 
 export interface FP_Post {
-    id: string;
-    guid: string;
-    title: string;
-    text: string;
-    type: string;
-    tags: string[];
-    attachmentOrder: string[];
-    metadata: FP_Post_Metadata;
-    releaseDate: string;
-    likes: number;
-    dislikes: number;
-    score: number;
-    comments: number;
-    creator: FP_Creator;
-    channel: FP_Channel;
-    wasReleasedSilently: boolean;
-    thumbnail: FP_Parent_Image | null;
-    isAccessible: boolean;
-    userInteraction: any[];
-    videoAttachments: FP_VideoAttachment[];
-    audioAttachments: FP_AudioAttachment[];
-    pictureAttachments: FP_PictureAttachment[];
-    galleryAttachments: FP_GalleryAttachment[];
+    id: string
+    guid: string
+    title: string
+    text: string
+    type: string
+    tags: string[]
+    attachmentOrder: string[]
+    metadata: FP_Post_Metadata
+    releaseDate: string
+    likes: number
+    dislikes: number
+    score: number
+    comments: number
+    creator: FP_Creator
+    channel: FP_Channel
+    wasReleasedSilently: boolean
+    thumbnail: FP_Parent_Image | null
+    isAccessible: boolean
+    videoAttachments: FP_VideoAttachment[]
+    audioAttachments: FP_AudioAttachment[]
+    pictureAttachments: FP_PictureAttachment[]
+    galleryAttachments: FP_GalleryAttachment[]
 }
 
 interface FP_Post_Metadata {
-    hasVideo: boolean;
-    videoCount: number;
-    videoDuration: number;
-    hasAudio: boolean;
-    audioCount: number;
-    audioDuration: number;
-    hasPicture: boolean;
-    pictureCount: number;
-    hasGallery: boolean;
-    galleryCount: number;
-    isFeatured: boolean;
+    hasVideo: boolean
+    videoCount: number
+    videoDuration: number
+    hasAudio: boolean
+    audioCount: number
+    audioDuration: number
+    hasPicture: boolean
+    pictureCount: number
+    hasGallery: boolean
+    galleryCount: number
+    isFeatured: boolean
 }
 
 interface FP_Attachment {
-    id: string;
-    guid: string;
-    title: string;
-    type: string;
-    description: string;
-    creator: string;
-    likes: number;
-    dislikes: number;
-    score: number;
-    isProcessing: boolean;
-    primaryBlogPost: string;
-    isAccessible: boolean;
+    id: string
+    guid: string
+    title: string
+    type: string
+    description: string
+    creator: string
+    likes: number
+    dislikes: number
+    score: number
+    isProcessing: boolean
+    primaryBlogPost: string
+    isAccessible: boolean
 }
 
 export interface FP_VideoAttachment extends FP_Attachment {
-    type: "video";
-    duration: number;
-    thumbnail: FP_Parent_Image | null;
+    type: "video"
+    duration: number
+    thumbnail: FP_Parent_Image | null
 }
 
 interface FP_AudioAttachment extends FP_Attachment {
-    type: "audio";
-    duration: number;
-    waveform: FP_AudioWaveform;
+    type: "audio"
+    duration: number
+    waveform: FP_AudioWaveform
 }
 
 interface FP_PictureAttachment extends FP_Attachment {
-    type: "picture";
+    type: "picture"
 }
 
 interface FP_GalleryAttachment extends FP_Attachment {
-    type: "gallery";
+    type: "gallery"
 }
 
-interface FP_AudioWaveform  {
-    dataSetLength: number;
-    highestValue: number;
-    lowestValue: number;
-    data: number[];
+interface FP_AudioWaveform {
+    dataSetLength: number
+    highestValue: number
+    lowestValue: number
+    data: number[]
 }
 
 export interface FP_Delivery {
-    groups: FP_DeliveryGroup[];
+    groups: FP_DeliveryGroup[]
 }
 
 interface FP_DeliveryGroup {
-    origins: FP_DeliveryOrigin[];
-    variants: FP_DeliveryVariant[];
+    origins: FP_DeliveryOrigin[]
+    variants: FP_DeliveryVariant[]
 }
 
 interface FP_DeliveryOrigin {
-    url: string;
+    url: string
 }
 
 export interface FP_DeliveryVariant {
-    name: string;
-    label: string;
-    url: string;
-    mimeType: string;
-    order: number;
-    hidden: boolean;
-    enabled: boolean;
-    meta: FP_DeliveryMetadata;
+    name: string
+    label: string
+    url: string
+    mimeType: string
+    order: number
+    hidden: boolean
+    enabled: boolean
+    meta: FP_DeliveryMetadata
 }
 
 interface FP_DeliveryMetadata {
-    video?: FP_DeliveryVideoMetadata;
-    audio?: FP_DeliveryAudioMetadata;
+    video?: FP_DeliveryVideoMetadata
+    audio?: FP_DeliveryAudioMetadata
 }
 
 interface FP_DeliveryVideoMetadata {
-    codec: string;
-    codecSimple: string;
-    bitrate: FP_Metadata_Bitrate;
-    width: number;
-    height: number;
-    isHdr: boolean;
-    fps: number;
-    mimeType: string;
+    codec: string
+    codecSimple: string
+    bitrate: FP_Metadata_Bitrate
+    width: number
+    height: number
+    isHdr: boolean
+    fps: number
+    mimeType: string
 }
 
 interface FP_DeliveryAudioMetadata {
-    codec: string;
-    bitrate: FP_Metadata_Bitrate;
-    mimeType: string;
-    channelCount: number;
-    samplerate: number;
+    codec: string
+    bitrate: FP_Metadata_Bitrate
+    mimeType: string
+    channelCount: number
+    samplerate: number
 }
 
 interface FP_Metadata_Bitrate {
-    average: number;
-    maximum?: number;
+    average: number
+    maximum?: number
+}
+
+export type CreatorVideosResponse = {
+    readonly lastElements: CreatorStatus[]
+    readonly blogPosts: FP_Post[]
+}
+
+export type CreatorStatus = {
+    readonly moreFetchable: boolean
+    readonly creatorId: string
+    readonly blogPostId: string
 }
 //#endregion
