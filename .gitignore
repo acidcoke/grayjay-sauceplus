@@ -1,0 +1,11 @@
+node_modules
+
+_dist
+
+deploy/script.js
+deploy/script.js.map
+deploy/script.ts
+
+tsconfig.tsbuildinfo
+bun.lockb
+package-lock.json
