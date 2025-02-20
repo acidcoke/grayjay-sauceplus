@@ -1,31 +1,50 @@
 {
-  "name": "grayjay-floatplane-plugin",
-  "version": "1.0.0",
-  "scripts": {
-    "build": "rollup -c",
-    "start": "rollup -c -w",
-    "prettier": "npx prettier --write ./src/**/*.ts"
-  },
-  "engines": {
-    "node": ">=14",
-    "npm": ">=6.14.4"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
-  "devDependencies": {
-    "@rollup/plugin-commonjs": "25.0.8",
-    "@rollup/plugin-node-resolve": "15.2.3",
-    "@rollup/plugin-typescript": "11.1.6",
-    "rollup": "4.18.0",
-    "rollup-plugin-copy": "3.5.0",
-    "rollup-plugin-delete": "2.0.0",
-    "typescript": "5.4.5"
-  },
-  "dependencies": {
-    "@types/crypto-js": "^4.2.2",
-    "crypto-js": "^4.2.0",
-    "tslib": "^2.7.0"
-  }
+    "name": "grayjay-floatplane-plugin",
+    "version": "1.0.0",
+    "description": "an up and comming platform",
+    "homepage": "https://gitlab.com/kaidelorenzo/grayjay-floatplane",
+    "type": "module",
+    "repository": {
+        "type": "git",
+        "url": "git+https://gitlab.com/kaidelorenzo/grayjay-floatplane.git"
+    },
+    "keywords": [
+        "floatplane",
+        "grayjay",
+        "plugin"
+    ],
+    "author": "Kai DeLorenzo",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://gitlab.com/kaidelorenzo/grayjay-floatplane/issues"
+    },
+    "dependencies": {},
+    "devDependencies": {
+        "@types/node": "^22.13.4",
+        "@eslint/js": "^9.20.0",
+        "@types/eslint__js": "^8.42.3",
+        "eslint": "^9.20.1",
+        "typescript": "^5.7.3",
+        "typescript-eslint": "^8.24.1",
+        "@kaidelorenzo/grayjay-polyfill": "gitlab:kaidelorenzo/grayjay-polyfill#b586cd766348728dffad84d4b321b6ba2d4412eb",
+        "@types/grayjay-source": "gitlab:kaidelorenzo/grayjay-plugin-types#c6dbd7e85eb00fbde6e3eed4092ae2872c7c11a8"
+    },
+    "scripts": {
+        "test": "node --no-experimental-strip-types --test",
+        "debug-build:node": "node _dist/src/utilities/build.js \"http://localhost:8080\"",
+        "debug-build:bun": "bun run _dist/src/utilities/build.js \"http://localhost:8080\"",
+        "debug-build:deno": "deno run --allow-read --allow-write --allow-env --allow-run _dist/src/utilities/build.js \"http://localhost:8080\"",
+        "build:node": "node _dist/src/utilities/build.js",
+        "build:bun": "bun run _dist/src/utilities/build.js",
+        "build:deno": "deno run --allow-read --allow-write --allow-env --allow-run _dist/src/utilities/build.js",
+        "dev:node": "node _dist/src/utilities/dev.js",
+        "dev:bun": "bun run _dist/src/utilities/dev.js",
+        "dev:deno": "deno run --allow-read --allow-env --allow-run _dist/src/utilities/dev.js",
+        "lint:node": "npx eslint .",
+        "lint:bun": "bunx eslint .",
+        "lint:deno": "deno lint",
+        "release:node": "node _dist/src/utilities/release.js",
+        "release:bun": "bun run _dist/src/utilities/release.js",
+        "release:deno": "deno run --allow-read --allow-env --allow-run _dist/src/utilities/release.js"
+    }
 }
