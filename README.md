@@ -8,15 +8,25 @@ A [Grayjay](https://grayjay.app) plugin for [Floatplane](https://floatplane.com)
 
 [Open in Grayjay](grayjay://plugin/https://gitlab.com/kaidelorenzo/grayjay-floatplane/-/releases/permalink/latest/downloads/src/config.json)
 
-[![Vimeo logo](deploy/icon.png)](grayjay://plugin/https://gitlab.com/kaidelorenzo/grayjay-floatplane/-/releases/permalink/latest/downloads/src/config.json)
+[![Floatplane logo](deploy/icon.png)](grayjay://plugin/https://gitlab.com/kaidelorenzo/grayjay-floatplane/-/releases/permalink/latest/downloads/src/config.json)
 
 Or scan the QR code from the Grayjay app
 
-[![Scan this QR code in the Grayjay app to install this Vimeo plugin for Grayjay](assets/qr.svg)](grayjay://plugin/https://gitlab.com/kaidelorenzo/grayjay-floatplane/-/releases/permalink/latest/downloads/src/config.json)
+[![Scan this QR code in the Grayjay app to install this Floatplane plugin for Grayjay](assets/qr.svg)](grayjay://plugin/https://gitlab.com/kaidelorenzo/grayjay-floatplane/-/releases/permalink/latest/downloads/src/config.json)
 
 ## Missing Features
 
-- [ ] none
+-   [ ] Downloading HLS streams. They are encrypted and download won't work until these changes are
+    merged
+    <https://gitlab.futo.org/videostreaming/grayjay/-/commit/2697107f768c1ba647c93a9f7c00158151bb16cb>
+-   [ ] Livestream support
+-   [ ] Comments
+-   [ ] Email login (Grayjay needs to be able to pass Cloudflare captcha). Discord login currently works
+-   [ ] Playback tracking
+-   [ ] Video recommendations
+-   [ ] Channel page
+-   [ ] Channel search
+-   [ ] Non video content
 
 ## Development
 
@@ -26,9 +36,9 @@ Or scan the QR code from the Grayjay app
 3. `tsc`
 4. `npm run dev:node`
 
-## TO-DO
+## TODO
 
-- [ ] none
+- [ ] Implement missing features
 
 ## How to create a private key for signing plugin scripts
 

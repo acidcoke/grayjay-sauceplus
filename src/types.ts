@@ -1,15 +1,10 @@
 //#region custom types
-export type Settings = {
-    stream_format: "hls.mpegts" | "hls.fmp4" | "dash.mpegts" | "dash.m4s" | "flat"
-    log_level: boolean
-}
-
 export type FloatplaneSource = Required<Omit<Source<
     { readonly [key: string]: string },
     never,
-    FeedType,
-    FeedType,
-    FeedType,
+    never,
+    never,
+    never,
     Settings
 >,
     "searchSuggestions"
@@ -35,232 +30,215 @@ export type FloatplaneSource = Required<Omit<Source<
     | "getChannel"
 >>
 
-export type State = unknown
+export type Settings = {
+    readonly stream_format: 0 | 1 | 2
+    readonly log_toasts: boolean
+}
+
+export type State = {
+    readonly client_id: string
+}
+
+export type MediaType = "hls.fmp4" | "hls.mpegts" | "flat"
 //#endregion
 
 //#region JSON types
-export interface FP_Subscription {
-    startDate: string
-    endDate: string
-    paymentID: number
-    interval: string
-    paymentCancelled: boolean
-    plan: FP_SubscriptionPlans
-    creator: string
+export type SubscriptionResponse = {
+    readonly startDate: string
+    readonly endDate: string
+    readonly paymentID: number
+    readonly interval: string
+    readonly paymentCancelled: boolean
+    readonly plan: SubscriptionPlans
+    readonly creator: string
 }
-
-interface FP_Creator {
-    id: string
-    owner: string
-    title: string
-    urlname: string
-    description: string
-    about: string
-    category: FP_Creator_Category | string
-    cover: FP_Parent_Image | null
-    icon: FP_Parent_Image | null
-    liveStream: FP_LiveStream | null
-    subscriptionPlans: FP_SubscriptionPlans[] | null
-    discoverable: boolean
-    subscriberCountDisplay: string
-    incomeDisplay: boolean
-    socialLinks?: object
+type Creator = {
+    readonly id: string
+    readonly owner: string
+    readonly title: string
+    readonly urlname: string
+    readonly description: string
+    readonly about: string
+    readonly category: CreatorCategory | string
+    readonly cover: ParentImage | null
+    readonly icon: ParentImage | null
+    readonly liveStream: LiveStream | null
+    readonly subscriptionPlans: SubscriptionPlans[] | null
+    readonly discoverable: boolean
+    readonly subscriberCountDisplay: string
+    readonly incomeDisplay: boolean
+    readonly socialLinks?: object
 }
-
-interface FP_Channel {
-    id: string
-    creator: string
-    title: string
-    urlname: string
-    about: string
-    order: number
-    cover: FP_Parent_Image | null
-    card: FP_Parent_Image | null
-    icon: FP_Parent_Image | null
+type Channel = {
+    readonly id: string
+    readonly creator: string
+    readonly title: string
+    readonly urlname: string
+    readonly about: string
+    readonly order: number
+    readonly cover: ParentImage | null
+    readonly card: ParentImage | null
+    readonly icon: ParentImage | null
 }
-
-interface FP_Creator_Category {
-    title: string
+type CreatorCategory = {
+    readonly title: string
 }
-
-interface FP_Image {
-    width: number
-    height: number
-    path: string
+interface Image {
+    readonly width: number
+    readonly height: number
+    readonly path: string
 }
-
-export interface FP_Parent_Image extends FP_Image {
-    childImages: FP_Image[]
+export interface ParentImage extends Image {
+    readonly childImages: Image[]
 }
-
-interface FP_LiveStream {
-    id: string
-    title: string
-    description: string
-    thumbnail: FP_Parent_Image | null
-    owner: string
-    streamPath: string
-    offline: FP_LiveStream_Offline | null
+type LiveStream = {
+    readonly id: string
+    readonly title: string
+    readonly description: string
+    readonly thumbnail: ParentImage | null
+    readonly owner: string
+    readonly streamPath: string
+    readonly offline: LiveStreamOffline | null
 }
-
-interface FP_LiveStream_Offline {
-    title: string
-    description: string
-    thumbnail: FP_Parent_Image | null
+type LiveStreamOffline = {
+    readonly title: string
+    readonly description: string
+    readonly thumbnail: ParentImage | null
 }
-
-interface FP_SubscriptionPlans {
-    id: string
-    title: string
-    description: string
-    price: string
-    priceYearly: string
-    currency: string
-    logo: FP_Parent_Image | null
-    interval: string
-    featured: boolean
-    allowGrandfatheredAccess: boolean
+type SubscriptionPlans = {
+    readonly id: string
+    readonly title: string
+    readonly description: string
+    readonly price: string
+    readonly priceYearly: string
+    readonly currency: string
+    readonly logo: ParentImage | null
+    readonly interval: string
+    readonly featured: boolean
+    readonly allowGrandfatheredAccess: boolean
 }
-
-export interface FP_Post {
-    id: string
-    guid: string
-    title: string
-    text: string
-    type: string
-    tags: string[]
-    attachmentOrder: string[]
-    metadata: FP_Post_Metadata
-    releaseDate: string
-    likes: number
-    dislikes: number
-    score: number
-    comments: number
-    creator: FP_Creator
-    channel: FP_Channel
-    wasReleasedSilently: boolean
-    thumbnail: FP_Parent_Image | null
-    isAccessible: boolean
-    videoAttachments: FP_VideoAttachment[]
-    audioAttachments: FP_AudioAttachment[]
-    pictureAttachments: FP_PictureAttachment[]
-    galleryAttachments: FP_GalleryAttachment[]
+export type Post = {
+    readonly id: string
+    readonly guid: string
+    readonly title: string
+    readonly text: string
+    readonly type: string
+    readonly tags: string[]
+    readonly attachmentOrder: string[]
+    readonly metadata: PostMetadata
+    readonly releaseDate: string
+    readonly likes: number
+    readonly dislikes: number
+    readonly score: number
+    readonly comments: number
+    readonly creator: Creator
+    readonly channel: Channel
+    readonly wasReleasedSilently: boolean
+    readonly thumbnail: ParentImage | null
+    readonly isAccessible: boolean
+    readonly videoAttachments: VideoAttachment[]
+    readonly audioAttachments: AudioAttachment[]
+    readonly pictureAttachments: PictureAttachment[]
+    readonly galleryAttachments: GalleryAttachment[]
 }
-
-interface FP_Post_Metadata {
-    hasVideo: boolean
-    videoCount: number
-    videoDuration: number
-    hasAudio: boolean
-    audioCount: number
-    audioDuration: number
-    hasPicture: boolean
-    pictureCount: number
-    hasGallery: boolean
-    galleryCount: number
-    isFeatured: boolean
+type PostMetadata = {
+    readonly hasVideo: boolean
+    readonly videoCount: number
+    readonly videoDuration: number
+    readonly hasAudio: boolean
+    readonly audioCount: number
+    readonly audioDuration: number
+    readonly hasPicture: boolean
+    readonly pictureCount: number
+    readonly hasGallery: boolean
+    readonly galleryCount: number
+    readonly isFeatured: boolean
 }
-
-interface FP_Attachment {
-    id: string
-    guid: string
-    title: string
-    type: string
-    description: string
-    creator: string
-    likes: number
-    dislikes: number
-    score: number
-    isProcessing: boolean
-    primaryBlogPost: string
-    isAccessible: boolean
+interface Attachment {
+    readonly id: string
+    readonly guid: string
+    readonly title: string
+    readonly type: string
+    readonly description: string
+    readonly creator: string
+    readonly likes: number
+    readonly dislikes: number
+    readonly score: number
+    readonly isProcessing: boolean
+    readonly primaryBlogPost: string
+    readonly isAccessible: boolean
 }
-
-export interface FP_VideoAttachment extends FP_Attachment {
-    type: "video"
-    duration: number
-    thumbnail: FP_Parent_Image | null
+export interface VideoAttachment extends Attachment {
+    readonly type: "video"
+    readonly duration: number
+    readonly thumbnail: ParentImage | null
 }
-
-interface FP_AudioAttachment extends FP_Attachment {
-    type: "audio"
-    duration: number
-    waveform: FP_AudioWaveform
+interface AudioAttachment extends Attachment {
+    readonly type: "audio"
+    readonly duration: number
+    readonly waveform: AudioWaveform
 }
-
-interface FP_PictureAttachment extends FP_Attachment {
-    type: "picture"
+interface PictureAttachment extends Attachment {
+    readonly type: "picture"
 }
-
-interface FP_GalleryAttachment extends FP_Attachment {
-    type: "gallery"
+interface GalleryAttachment extends Attachment {
+    readonly type: "gallery"
 }
-
-interface FP_AudioWaveform {
-    dataSetLength: number
-    highestValue: number
-    lowestValue: number
-    data: number[]
+type AudioWaveform = {
+    readonly dataSetLength: number
+    readonly highestValue: number
+    readonly lowestValue: number
+    readonly data: number[]
 }
-
-export interface FP_Delivery {
-    groups: FP_DeliveryGroup[]
+export type Delivery = {
+    readonly groups: DeliveryGroup[]
 }
-
-interface FP_DeliveryGroup {
-    origins: FP_DeliveryOrigin[]
-    variants: FP_DeliveryVariant[]
+type DeliveryGroup = {
+    readonly origins: DeliveryOrigin[]
+    readonly variants: DeliveryVariant[]
 }
-
-interface FP_DeliveryOrigin {
-    url: string
+type DeliveryOrigin = {
+    readonly url: string
 }
-
-export interface FP_DeliveryVariant {
-    name: string
-    label: string
-    url: string
-    mimeType: string
-    order: number
-    hidden: boolean
-    enabled: boolean
-    meta: FP_DeliveryMetadata
+export type DeliveryVariant = {
+    readonly name: string
+    readonly label: string
+    readonly url: string
+    readonly mimeType: string
+    readonly order: number
+    readonly hidden: boolean
+    readonly enabled: boolean
+    readonly meta: DeliveryMetadata
 }
-
-interface FP_DeliveryMetadata {
-    video?: FP_DeliveryVideoMetadata
-    audio?: FP_DeliveryAudioMetadata
+type DeliveryMetadata = {
+    readonly video: DeliveryVideoMetadata
+    readonly audio?: DeliveryAudioMetadata
 }
-
-interface FP_DeliveryVideoMetadata {
-    codec: string
-    codecSimple: string
-    bitrate: FP_Metadata_Bitrate
-    width: number
-    height: number
-    isHdr: boolean
-    fps: number
-    mimeType: string
+type DeliveryVideoMetadata = {
+    readonly codec: string
+    readonly codecSimple: string
+    readonly bitrate: MetadataBitrate
+    readonly width: number
+    readonly height: number
+    readonly isHdr: boolean
+    readonly fps: number
+    readonly mimeType: string
 }
-
-interface FP_DeliveryAudioMetadata {
-    codec: string
-    bitrate: FP_Metadata_Bitrate
-    mimeType: string
-    channelCount: number
-    samplerate: number
+type DeliveryAudioMetadata = {
+    readonly codec: string
+    readonly bitrate: MetadataBitrate
+    readonly mimeType: string
+    readonly channelCount: number
+    readonly samplerate: number
 }
-
-interface FP_Metadata_Bitrate {
-    average: number
-    maximum?: number
+type MetadataBitrate = {
+    readonly average: number
+    readonly maximum?: number
 }
-
 export type CreatorVideosResponse = {
     readonly lastElements: CreatorStatus[]
-    readonly blogPosts: FP_Post[]
+    readonly blogPosts: Post[]
 }
-
 export type CreatorStatus = {
     readonly moreFetchable: boolean
     readonly creatorId: string

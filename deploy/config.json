@@ -37,28 +37,26 @@
             "type": "Dropdown",
             "default": "0",
             "options": [
-                "hls.mpegts",
-                "hls.fmp4",
-                "dash,mpegts",
-                "dash.m4s",
-                "flat"
+                "HLS",
+                "Legacy HLS",
+                "Flat MP4"
             ]
         },
         {
-            "variable": "log_level",
+            "variable": "log_toasts",
             "name": "Toast Logging",
             "description": "Will log details in toasts",
             "type": "Boolean",
-            "default": "true"
+            "default": "false"
         }
     ],
     "authentication": {
         "loginUrl": "https://www.floatplane.com/login",
-        "loginButton": "form > div > button",
-        "userAgent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:126.0) Gecko/20100101 Firefox/126.0",
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
         "cookiesToFind": [
-            "sails.sid"
+            "sails.sid",
+            "muxData"
         ],
-        "loginWarning": "This plugin does not support 2FA yet"
+        "loginWarning": "Login and then open a video"
     }
 }
