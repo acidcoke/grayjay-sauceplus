@@ -18,7 +18,7 @@ Or scan the QR code from the Grayjay app
 
 -   [ ] Downloading HLS streams. They are encrypted and download won't work until these changes are
     merged
-    <https://gitlab.futo.org/videostreaming/grayjay/-/commit/2697107f768c1ba647c93a9f7c00158151bb16cb>
+    <https://gitlab.futo.org/videostreaming/grayjay/-/merge_requests/89>
 -   [ ] Livestream support
 -   [ ] Comments
 -   [ ] Email login (Grayjay needs to be able to pass Cloudflare captcha). Discord login currently works
