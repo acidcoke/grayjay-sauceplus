@@ -2,32 +2,31 @@
     "name": "grayjay-floatplane-plugin",
     "version": "1.0.0",
     "description": "an up and comming platform",
-    "homepage": "https://gitlab.com/kaidelorenzo/grayjay-floatplane",
+    "homepage": "https://github.com/kaidelorenzo/grayjay-floatplane",
     "type": "module",
     "repository": {
         "type": "git",
-        "url": "git+https://gitlab.com/kaidelorenzo/grayjay-floatplane.git"
+        "url": "git+https://github.com/kaidelorenzo/grayjay-floatplane.git"
     },
     "keywords": [
         "floatplane",
         "grayjay",
         "plugin"
     ],
-    "author": "Kai DeLorenzo",
-    "license": "ISC",
+    "author": "VoxelPrismatic",
+    "license": "AGPL-3.0-or-later",
     "bugs": {
-        "url": "https://gitlab.com/kaidelorenzo/grayjay-floatplane/issues"
+        "url": "https://github.com/kaidelorenzo/grayjay-floatplane/issues"
     },
     "dependencies": {},
     "devDependencies": {
-        "@types/node": "^22.13.4",
-        "@eslint/js": "^9.20.0",
-        "@types/eslint__js": "^8.42.3",
-        "eslint": "^9.20.1",
-        "typescript": "^5.7.3",
-        "typescript-eslint": "^8.24.1",
+        "@types/node": "^22.15.22",
+        "@eslint/js": "^9.27.0",
+        "eslint": "^9.27.0",
+        "typescript": "^5.8.3",
+        "typescript-eslint": "^8.33.0",
         "@kaidelorenzo/grayjay-polyfill": "gitlab:kaidelorenzo/grayjay-polyfill#b586cd766348728dffad84d4b321b6ba2d4412eb",
-        "@types/grayjay-source": "gitlab:kaidelorenzo/grayjay-plugin-types#5721b646fa9a5276f181eeb67716f65f79523a6d"
+        "@types/grayjay-source": "gitlab:kaidelorenzo/grayjay-plugin-types#9dcec6910917e3ddc5a663f20be84bd97dc1fe9a"
     },
     "scripts": {
         "test": "node --no-experimental-strip-types --test",

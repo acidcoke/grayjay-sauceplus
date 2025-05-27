@@ -1,6 +1,8 @@
 //#region custom types
 export type FloatplaneSource = Required<Omit<Source<
-    { readonly [key: string]: string },
+    never,
+    never,
+    never,
     never,
     never,
     never,
@@ -28,11 +30,18 @@ export type FloatplaneSource = Required<Omit<Source<
     | "getContentRecommendations"
     | "isChannelUrl"
     | "getChannel"
+    | "getShorts"
 >>
 
 export type Settings = {
-    readonly stream_format: 0 | 1 | 2
+    readonly stream_format: StreamFormat
     readonly log_toasts: boolean
+}
+
+export const enum StreamFormat {
+    HLS = 0,
+    LegacyHLS = 1,
+    FlatMP4 = 2
 }
 
 export type State = {

@@ -5,8 +5,8 @@
     "author": "VoxelPrismatic",
     "authorUrl": "https://github.com/voxelprismatic",
     "platformUrl": "https://floatplane.com",
-    "sourceUrl": "https://voxelprismatic.github.io/grayjay-floatplane/config.json",
-    "repositoryUrl": "https://voxelprismatic.github.io/grayjay-floatplane/",
+    "sourceUrl": "https://github.com/kaidelorenzo/grayjay-floatplane/releases/latest/download/config.json",
+    "repositoryUrl": "https://github.com/kaidelorenzo/grayjay-floatplane",
     "scriptUrl": "./script.js",
     "version": 3,
     "iconUrl": "./icon.png",
@@ -57,6 +57,6 @@
             "sails.sid",
             "muxData"
         ],
-        "loginWarning": "Login and then open a video"
+        "loginWarning": "Login and then open a video. Try using Discord login"
     }
 }

@@ -1,5 +1,5 @@
 //#region constants
-import type {
+import {
     CreatorStatus,
     CreatorVideosResponse,
     FloatplaneSource,
@@ -11,21 +11,22 @@ import type {
     VideoAttachment,
     MediaType,
     Settings,
-    State
+    State,
+    StreamFormat
 } from "./types.js"
 
-const PLATFORM = "Floatplane" as const
-const USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64; rv:124.0) Gecko/20100101 Firefox/124.0" as const
+const PLATFORM = "Floatplane"
+const USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64; rv:124.0) Gecko/20100101 Firefox/124.0"
 
-const PLATFORM_URL = "https://www.floatplane.com" as const
-const BASE_API_URL = "https://www.floatplane.com/api" as const
+const PLATFORM_URL = "https://www.floatplane.com"
+const BASE_API_URL = "https://www.floatplane.com/api"
 const SUBSCRIPTIONS_URL = `${BASE_API_URL}/v3/user/subscriptions` as const
 const POST_URL = `${BASE_API_URL}/v3/content/post` as const
 const DELIVERY_URL = `${BASE_API_URL}/v3/delivery/info` as const
 const LIST_URL = `${BASE_API_URL}/v3/content/creator/list` as const
 
-const HARDCODED_ZERO = 0 as const
-const HARDCODED_EMPTY_STRING = "" as const
+const HARDCODED_ZERO = 0
+const HARDCODED_EMPTY_STRING = ""
 const EMPTY_AUTHOR = new PlatformAuthorLink(new PlatformID(PLATFORM, "", plugin.config.id), "", "")
 
 // this API reference makes everything super easy
@@ -33,11 +34,6 @@ const EMPTY_AUTHOR = new PlatformAuthorLink(new PlatformID(PLATFORM, "", plugin.
 
 const local_http = http
 // const local_utility = utility
-
-// set missing constants
-Type.Order.Chronological = "Latest releases"
-Type.Order.Views = "Most played"
-Type.Order.Favorites = "Most favorited"
 
 let local_settings: Settings
 
@@ -56,14 +52,13 @@ const local_source: FloatplaneSource = {
 }
 init_source(local_source)
 function init_source<
-    T extends { readonly [key: string]: string },
-    S extends never,
     ChannelTypes extends never,
     SearchTypes extends never,
     ChannelSearchTypes extends never
->(local_source: Source<T, S, ChannelTypes, SearchTypes, ChannelSearchTypes, Settings>) {
+>(local_source: Source<never, never, never, never, ChannelTypes, SearchTypes, ChannelSearchTypes, Settings>) {
     for (const method_key of Object.keys(local_source)) {
         // @ts-expect-error assign to readonly constant source object
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         source[method_key] = local_source[method_key]
     }
 }
@@ -92,6 +87,7 @@ function enable(conf: SourceConfig, settings: Settings, saved_state?: string | n
     }
 
     if (saved_state !== null && saved_state !== undefined) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const state: State = JSON.parse(saved_state)
         local_state = { ...state, client_id }
     } else {
@@ -113,6 +109,7 @@ function getHome(): ContentPager {
     if (!bridge.isLoggedIn()) {
         throw new LoginRequiredException("login to use floatplane")
     }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const response: SubscriptionResponse[] = JSON.parse(local_http.GET(SUBSCRIPTIONS_URL, { "User-Agent": USER_AGENT }, true).body)
 
     const limit = 20
@@ -138,14 +135,14 @@ function create_platform_video(blog: Post): PlatformVideo | null {
                 new PlatformID("Floatplane", blog.channel.creator + ":" + blog.channel.id, plugin.config.id),
                 blog.channel.title,
                 ChannelUrlFromBlog(blog),
-                blog.channel.icon?.path || ""
+                blog.channel.icon?.path ?? ""
             ),
             datetime: new Date(blog.releaseDate).getTime() / 1000,
             duration: blog.metadata.videoDuration,
             viewCount: 0,
             url: PLATFORM_URL + "/post/" + blog.id,
             shareUrl: PLATFORM_URL + "/post/" + blog.id,
-            isLive: false                                   
+            isLive: false
         })
     }
 
@@ -161,15 +158,16 @@ function ChannelUrlFromBlog(blog: Post): string {
 }
 
 class HomePager extends ContentPager {
-    private readonly creators: { [creator: string]: CreatorStatus }
+    private readonly creators: Record<string, CreatorStatus>
     constructor(creator_ids: string[], private readonly limit: number) {
         const url = new URL(LIST_URL)
         url.searchParams.set("limit", limit.toString())
-        creator_ids.forEach((creator_id, n) => url.searchParams.set(`ids[${n}]`, creator_id))
+        creator_ids.forEach((creator_id, index) => { url.searchParams.set(`ids[${index.toString()}]`, creator_id) })
 
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const response: CreatorVideosResponse = JSON.parse(local_http.GET(url.toString(), {}, true).body)
 
-        const creators: { [creator: string]: CreatorStatus } = {}
+        const creators: Record<string, CreatorStatus> = {}
         let has_more = false
         for (const data of response.lastElements) {
             creators[data.creatorId] = data
@@ -184,16 +182,17 @@ class HomePager extends ContentPager {
     override nextPage(this: HomePager) {
         const url = new URL(LIST_URL)
         url.searchParams.set("limit", this.limit.toString())
-        Object.values(this.creators).forEach((creator, n) => {
-            url.searchParams.set(`ids[${n}]`, creator.creatorId)
+        Object.values(this.creators).forEach((creator, index) => {
+            url.searchParams.set(`ids[${index.toString()}]`, creator.creatorId)
 
             if (creator.blogPostId) {
-                url.searchParams.set(`fetchAfter[${n}][creatorId]`, creator.creatorId)
-                url.searchParams.set(`fetchAfter[${n}][blogPostId]`, creator.blogPostId)
-                url.searchParams.set(`fetchAfter[${n}][moreFetchable]`, creator.moreFetchable.toString())
+                url.searchParams.set(`fetchAfter[${index.toString()}][creatorId]`, creator.creatorId)
+                url.searchParams.set(`fetchAfter[${index.toString()}][blogPostId]`, creator.blogPostId)
+                url.searchParams.set(`fetchAfter[${index.toString()}][moreFetchable]`, creator.moreFetchable.toString())
             }
         })
 
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const response: CreatorVideosResponse = JSON.parse(local_http.GET(url.toString(), {}, true).body)
 
         let has_more = false
@@ -220,11 +219,16 @@ function getContentDetails(url: string): PlatformContentDetails {
     if (!bridge.isLoggedIn()) {
         throw new LoginRequiredException("login to watch floatplane")
     }
-    const post_id: string = url.split("/").pop() as string
+    const post_id: string | undefined = url.split("/").pop()
+
+    if (post_id === undefined) {
+        throw new ScriptException("unreachable")
+    }
 
     const api_url = new URL(POST_URL)
     api_url.searchParams.set("id", post_id)
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const response: Post = JSON.parse(local_http.GET(api_url.toString(), {}, true).body)
 
     if (response.metadata.hasVideo) {
@@ -242,7 +246,7 @@ function getContentDetails(url: string): PlatformContentDetails {
                 new PlatformID(PLATFORM, response.channel.creator + ":" + response.channel.id, plugin.config.id),
                 response.channel.title,
                 ChannelUrlFromBlog(response),
-                response.channel.icon?.path || ""
+                response.channel.icon?.path ?? ""
             ),
             datetime: new Date(response.releaseDate).getTime() / 1000,
             duration: response.metadata.videoDuration,
@@ -295,6 +299,7 @@ function create_video_source(
                 url: `${origin}${variant.url}`,
                 duration,
                 priority: true,
+                language: Language.UNKNOWN,
                 requestModifier: {
                     options: {
                         applyAuthClient: local_state.client_id
@@ -307,6 +312,7 @@ function create_video_source(
                 url: `${origin}${variant.url}`,
                 duration,
                 priority: false,
+                language: Language.UNKNOWN,
                 requestModifier: {
                     options: {
                         applyAuthClient: local_state.client_id
@@ -325,6 +331,7 @@ function create_video_descriptor(attachments: VideoAttachment[]): VideoSourceDes
         url.searchParams.set("entityId", video.id)
         url.searchParams.set("outputKind", media_type)
 
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const response: Delivery = JSON.parse(local_http.GET(url.toString(), { accept: "application/json" }, true).body)
         return response.groups.flatMap((group) => {
             return group.variants.map((variant) => {
@@ -354,13 +361,13 @@ function create_video_descriptor(attachments: VideoAttachment[]): VideoSourceDes
 function milliseconds_to_WebVTT_timestamp(milliseconds: number) {
     return new Date(milliseconds).toISOString().substring(11, 23)
 }
-function get_format(setting: 0 | 1 | 2): MediaType {
+function get_format(setting: StreamFormat): MediaType {
     switch (setting) {
-        case 0:
+        case StreamFormat.HLS:
             return "hls.fmp4"
-        case 1:
+        case StreamFormat.LegacyHLS:
             return "hls.mpegts"
-        case 2:
+        case StreamFormat.FlatMP4:
             return "flat"
         default:
             throw assert_exhaustive(setting, "unreachable")
