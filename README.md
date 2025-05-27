@@ -4,7 +4,9 @@ A [Grayjay](https://grayjay.app) plugin for [Floatplane](https://floatplane.com)
 
 ## Installation
 
-Open this link `grayjay://plugin/https://github.com/kaidelorenzo/grayjay-floatplane/releases/latest/download/config.json`
+Open this link
+
+`grayjay://plugin/https://github.com/kaidelorenzo/grayjay-floatplane/releases/latest/download/config.json`
 
 Or scan the QR code from the Grayjay app
 
