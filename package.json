@@ -2,11 +2,11 @@
     "name": "grayjay-sauceplus-plugin",
     "version": "1.0.0",
     "description": "an up and comming platform",
-    "homepage": "https://github.com/kaidelorenzo/grayjay-sauceplus",
+    "homepage": "https://github.com/acidcoke/grayjay-sauceplus",
     "type": "module",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/kaidelorenzo/grayjay-sauceplus.git"
+        "url": "git+https://github.com/acidcoke/grayjay-sauceplus.git"
     },
     "keywords": [
         "sauceplus",
@@ -16,7 +16,7 @@
     "author": "Acidcoke",
     "license": "AGPL-3.0-or-later",
     "bugs": {
-        "url": "https://github.com/kaidelorenzo/grayjay-sauceplus/issues"
+        "url": "https://github.com/acidcoke/grayjay-sauceplus/issues"
     },
     "dependencies": {},
     "devDependencies": {
@@ -26,7 +26,7 @@
         "typescript": "^5.8.3",
         "typescript-eslint": "^8.33.0",
         "@kaidelorenzo/grayjay-polyfill": "gitlab:kaidelorenzo/grayjay-polyfill#b586cd766348728dffad84d4b321b6ba2d4412eb",
-        "@types/grayjay-source": "gitlab:kaidelorenzo/grayjay-plugin-types#9dcec6910917e3ddc5a663f20be84bd97dc1fe9a"
+        "@types/grayjay-source": "gitlab:acidcoke/grayjay-plugin-types#9dcec6910917e3ddc5a663f20be84bd97dc1fe9a"
     },
     "scripts": {
         "test": "node --no-experimental-strip-types --test",

@@ -6,11 +6,11 @@ A [Grayjay](https://grayjay.app) plugin for [Sauceplus](https://sauceplus.com)
 
 Open this link
 
-`grayjay://plugin/https://github.com/kaidelorenzo/grayjay-sauceplus/releases/latest/download/config.json`
+`grayjay://plugin/https://github.com/acidcoke/grayjay-sauceplus/releases/latest/download/config.json`
 
 Or scan the QR code from the Grayjay app
 
-[![Scan this QR code in the Grayjay app to install this Sauceplus plugin for Grayjay](assets/qr.svg)](grayjay://plugin/https://github.com/kaidelorenzo/grayjay-sauceplus/releases/latest/download/config.json)
+[![Scan this QR code in the Grayjay app to install this Sauceplus plugin for Grayjay](assets/qr.svg)](grayjay://plugin/https://github.com/acidcoke/grayjay-sauceplus/releases/latest/download/config.json)
 
 ## Missing Features
 
