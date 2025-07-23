@@ -2,7 +2,7 @@
 import {
     CreatorStatus,
     CreatorVideosResponse,
-    FloatplaneSource,
+    SauceplusSource,
     Delivery,
     DeliveryVariant,
     ParentImage,
@@ -15,11 +15,11 @@ import {
     StreamFormat
 } from "./types.js"
 
-const PLATFORM = "Floatplane"
+const PLATFORM = "Sauceplus"
 const USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64; rv:124.0) Gecko/20100101 Firefox/124.0"
 
-const PLATFORM_URL = "https://www.floatplane.com"
-const BASE_API_URL = "https://www.floatplane.com/api"
+const PLATFORM_URL = "https://www.sauceplus.com"
+const BASE_API_URL = "https://www.sauceplus.com/api"
 const SUBSCRIPTIONS_URL = `${BASE_API_URL}/v3/user/subscriptions` as const
 const POST_URL = `${BASE_API_URL}/v3/content/post` as const
 const DELIVERY_URL = `${BASE_API_URL}/v3/delivery/info` as const
@@ -30,7 +30,7 @@ const HARDCODED_EMPTY_STRING = ""
 const EMPTY_AUTHOR = new PlatformAuthorLink(new PlatformID(PLATFORM, "", plugin.config.id), "", "")
 
 // this API reference makes everything super easy
-// https://jman012.github.io/FloatplaneAPIDocs/SwaggerUI-full/
+// https://jman012.github.io/SauceplusAPIDocs/SwaggerUI-full/
 
 const local_http = http
 // const local_utility = utility
@@ -42,7 +42,7 @@ let local_state: State
 //#endregion
 
 //#region source methods
-const local_source: FloatplaneSource = {
+const local_source: SauceplusSource = {
     enable,
     disable,
     saveState,
@@ -78,7 +78,7 @@ function enable(conf: SourceConfig, settings: Settings, saved_state?: string | n
     local_settings = settings
 
     if (!bridge.isLoggedIn()) {
-        throw new LoginRequiredException("login to watch floatplane")
+        throw new LoginRequiredException("login to watch sauceplus")
     }
 
     const client_id = local_http.getDefaultClient(true).clientId
@@ -97,7 +97,7 @@ function enable(conf: SourceConfig, settings: Settings, saved_state?: string | n
 //#endregion
 
 function disable() {
-    log("Floatplane log: disabling")
+    log("Sauceplus log: disabling")
 }
 
 function saveState() {
@@ -107,7 +107,7 @@ function saveState() {
 //#region home
 function getHome(): ContentPager {
     if (!bridge.isLoggedIn()) {
-        throw new LoginRequiredException("login to use floatplane")
+        throw new LoginRequiredException("login to use sauceplus")
     }
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const response: SubscriptionResponse[] = JSON.parse(local_http.GET(SUBSCRIPTIONS_URL, { "User-Agent": USER_AGENT }, true).body)
@@ -128,11 +128,11 @@ function create_thumbnails(thumbs: ParentImage | null): Thumbnails {
 function create_platform_video(blog: Post): PlatformVideo | null {
     if (blog.metadata.hasVideo) {
         return new PlatformVideo({
-            id: new PlatformID("Floatplane", blog.id, plugin.config.id),
+            id: new PlatformID("Sauceplus", blog.id, plugin.config.id),
             name: blog.title,
             thumbnails: create_thumbnails(blog.thumbnail),
             author: new PlatformAuthorLink(
-                new PlatformID("Floatplane", blog.channel.creator + ":" + blog.channel.id, plugin.config.id),
+                new PlatformID("Sauceplus", blog.channel.creator + ":" + blog.channel.id, plugin.config.id),
                 blog.channel.title,
                 ChannelUrlFromBlog(blog),
                 blog.channel.icon?.path ?? ""
@@ -213,11 +213,11 @@ class HomePager extends ContentPager {
 
 //#region 
 function isContentDetailsUrl(url: string) {
-    return /^https?:\/\/(www\.)?floatplane\.com\/post\/[\w\d]+$/.test(url)
+    return /^https?:\/\/(www\.)?sauceplus\.com\/post\/[\w\d]+$/.test(url)
 }
 function getContentDetails(url: string): PlatformContentDetails {
     if (!bridge.isLoggedIn()) {
-        throw new LoginRequiredException("login to watch floatplane")
+        throw new LoginRequiredException("login to watch sauceplus")
     }
     const post_id: string | undefined = url.split("/").pop()
 
@@ -376,7 +376,7 @@ function get_format(setting: StreamFormat): MediaType {
 function assert_exhaustive(value: never): void
 function assert_exhaustive(value: never, exception_message: string): ScriptException
 function assert_exhaustive(value: never, exception_message?: string): ScriptException | undefined {
-    log(["Floatplane log:", value])
+    log(["Sauceplus log:", value])
     if (exception_message !== undefined) {
         return new ScriptException(exception_message)
     }

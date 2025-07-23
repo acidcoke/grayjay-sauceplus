@@ -1,22 +1,22 @@
 {
-    "name": "grayjay-floatplane-plugin",
+    "name": "grayjay-sauceplus-plugin",
     "version": "1.0.0",
     "description": "an up and comming platform",
-    "homepage": "https://github.com/kaidelorenzo/grayjay-floatplane",
+    "homepage": "https://github.com/kaidelorenzo/grayjay-sauceplus",
     "type": "module",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/kaidelorenzo/grayjay-floatplane.git"
+        "url": "git+https://github.com/kaidelorenzo/grayjay-sauceplus.git"
     },
     "keywords": [
-        "floatplane",
+        "sauceplus",
         "grayjay",
         "plugin"
     ],
-    "author": "VoxelPrismatic",
+    "author": "Acidcoke",
     "license": "AGPL-3.0-or-later",
     "bugs": {
-        "url": "https://github.com/kaidelorenzo/grayjay-floatplane/issues"
+        "url": "https://github.com/kaidelorenzo/grayjay-sauceplus/issues"
     },
     "dependencies": {},
     "devDependencies": {

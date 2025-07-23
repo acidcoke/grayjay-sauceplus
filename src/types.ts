@@ -1,5 +1,5 @@
 //#region custom types
-export type FloatplaneSource = Required<Omit<Source<
+export type SauceplusSource = Required<Omit<Source<
     never,
     never,
     never,

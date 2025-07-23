@@ -1,16 +1,16 @@
-# Floatplane Plugin for Grayjay
+# Sauceplus Plugin for Grayjay
 
-A [Grayjay](https://grayjay.app) plugin for [Floatplane](https://floatplane.com)
+A [Grayjay](https://grayjay.app) plugin for [Sauceplus](https://sauceplus.com)
 
 ## Installation
 
 Open this link
 
-`grayjay://plugin/https://github.com/kaidelorenzo/grayjay-floatplane/releases/latest/download/config.json`
+`grayjay://plugin/https://github.com/kaidelorenzo/grayjay-sauceplus/releases/latest/download/config.json`
 
 Or scan the QR code from the Grayjay app
 
-[![Scan this QR code in the Grayjay app to install this Floatplane plugin for Grayjay](assets/qr.svg)](grayjay://plugin/https://github.com/kaidelorenzo/grayjay-floatplane/releases/latest/download/config.json)
+[![Scan this QR code in the Grayjay app to install this Sauceplus plugin for Grayjay](assets/qr.svg)](grayjay://plugin/https://github.com/kaidelorenzo/grayjay-sauceplus/releases/latest/download/config.json)
 
 ## Missing Features
 
@@ -28,7 +28,7 @@ Or scan the QR code from the Grayjay app
 
 ## Development
 
-0. Using [these swagger docs](https://jman012.github.io/FloatplaneAPIDocs/SwaggerUI-full/)
+0. Using [these swagger docs](https://jman012.github.io/SauceplusAPIDocs/SwaggerUI-full/)
 1. install typescript (`tsc`) and `node/npm`, `deno` or, `bun`
 2. `npm update`
 3. `tsc`
