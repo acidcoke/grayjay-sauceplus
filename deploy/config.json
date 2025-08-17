@@ -55,7 +55,7 @@
         "completionUrl": "https://www.sauceplus.com",
         "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
         "cookiesToFind": [
-            "sails.sid"
+            "muxData"
         ],
         "loginWarning": "Login and then open a video. Try using Discord login"
     }
