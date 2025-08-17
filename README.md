@@ -5,7 +5,7 @@ A [Grayjay](https://grayjay.app) plugin for [Sauceplus](https://sauceplus.com)
 ## Installation
 
 
-Open this [link](grayjay://plugin/https://github.com/acidcoke/grayjay-sauceplus/releases/latest/download/config.json)
+Click this [link](grayjay://plugin/https://github.com/acidcoke/grayjay-sauceplus/releases/latest/download/config.json)
 
 Or scan the QR code from the Grayjay app
 
