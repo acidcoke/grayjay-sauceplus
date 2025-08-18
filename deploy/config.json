@@ -8,7 +8,7 @@
     "sourceUrl": "https://github.com/acidcoke/grayjay-sauceplus/releases/latest/download/config.json",
     "repositoryUrl": "https://github.com/acidcoke/grayjay-sauceplus",
     "scriptUrl": "./script.js",
-    "version": 5,
+    "version": 6,
     "iconUrl": "./icon.png",
     "id": "d8643244-633f-4c71-9f45-215b2387dc2c",
     "packages": [
@@ -18,16 +18,16 @@
     "allowUrls": [
         "www.sauceplus.com",
         "sauceplus.com",
-        "cdn-vod-drm0.sauceplus.com",
-        "cdn-vod-drm1.sauceplus.com",
-        "cdn-vod-drm2.sauceplus.com",
-        "cdn-vod-drm3.sauceplus.com",
-        "cdn-vod-drm4.sauceplus.com",
-        "cdn-vod-drm5.sauceplus.com",
-        "cdn-vod-drm6.sauceplus.com",
-        "cdn-vod-drm7.sauceplus.com",
-        "cdn-vod-drm8.sauceplus.com",
-        "cdn-vod-drm9.sauceplus.com"
+        "cdn-vod-drm0.floatplane.com",
+        "cdn-vod-drm1.floatplane.com",
+        "cdn-vod-drm2.floatplane.com",
+        "cdn-vod-drm3.floatplane.com",
+        "cdn-vod-drm4.floatplane.com",
+        "cdn-vod-drm5.floatplane.com",
+        "cdn-vod-drm6.floatplane.com",
+        "cdn-vod-drm7.floatplane.com",
+        "cdn-vod-drm8.floatplane.com",
+        "cdn-vod-drm9.floatplane.com"
     ],
     "settings": [
         {
@@ -52,11 +52,10 @@
     ],
     "authentication": {
         "loginUrl": "https://www.sauceplus.com/login",
-        "completionUrl": "https://www.sauceplus.com",
         "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
         "cookiesToFind": [
             "muxData",
-            "cf_clearance"
+            "__Host-sp-sess"
         ],
         "loginWarning": "Login and then open a video. Try using Discord login"
     }
