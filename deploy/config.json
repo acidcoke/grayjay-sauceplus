@@ -8,9 +8,9 @@
     "sourceUrl": "https://github.com/acidcoke/grayjay-sauceplus/releases/latest/download/config.json",
     "repositoryUrl": "https://github.com/acidcoke/grayjay-sauceplus",
     "scriptUrl": "./script.js",
-    "version": 6,
+    "version": 7,
     "iconUrl": "./icon.png",
-    "id": "d8643244-633f-4c71-9f45-215b2387dc2c",
+    "id": "9fe6145b-5a4b-4e41-b05c-c65836d4910e",
     "packages": [
         "Http"
     ],
@@ -58,5 +58,13 @@
             "__Host-sp-sess"
         ],
         "loginWarning": "Login and then open a video. Try using Discord login"
+    },
+
+    "captcha": {
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
+        "cookiesToFind": [
+            "cf_clearance",
+            "_cfuvid"
+        ]
     }
 }
