@@ -140,7 +140,7 @@ function create_platform_video(blog: Post): PlatformVideo | null {
             datetime: new Date(blog.releaseDate).getTime() / 1000,
             duration: blog.metadata.videoDuration,
             viewCount: 0,
-            url: PLATFORM_URL + "/post/" + blog.id,
+            url: BASE_API_URL + "/v3/content/video/" + blog.videoAttachments[0]?.id,
             shareUrl: PLATFORM_URL + "/post/" + blog.id,
             isLive: false
         })
