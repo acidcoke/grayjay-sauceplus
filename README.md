@@ -1,4 +1,4 @@
-# Sauceplus Plugin for Grayjay
+# WIP: Sauceplus Plugin for Grayjay
 
 A [Grayjay](https://grayjay.app) plugin for [Sauceplus](https://sauceplus.com)
 
