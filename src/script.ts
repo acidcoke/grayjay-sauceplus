@@ -252,7 +252,7 @@ function getContentDetails(url: string): PlatformContentDetails {
             duration: response.metadata.videoDuration,
             // TODO: implement view count
             viewCount: HARDCODED_ZERO,
-            url: PLATFORM_URL + "/post/" + response.id,
+            url: BASE_API_URL + "/v3/content/video/" + (blog.videoAttachments[0]?.id ?? ""),
             shareUrl: PLATFORM_URL + "/post/" + response.id,
             isLive: false,
             video: videos,
