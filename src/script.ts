@@ -29,8 +29,8 @@ const HARDCODED_ZERO = 0
 const HARDCODED_EMPTY_STRING = ""
 const EMPTY_AUTHOR = new PlatformAuthorLink(new PlatformID(PLATFORM, "", plugin.config.id), "", "")
 
-// this API reference makes everything super easy
-// https://jman012.github.io/SauceplusAPIDocs/SwaggerUI-full/
+// this Floatplane API reference is somewhat useful
+// https://jamamp.github.io/FloatplaneAPIDocs/SwaggerUI/
 
 const local_http = http
 // const local_utility = utility
@@ -107,7 +107,7 @@ function saveState() {
 //#region home
 function getHome(): ContentPager {
     if (!bridge.isLoggedIn()) {
-        throw new LoginRequiredException("login to use sauceplus")
+        throw new LoginRequiredException("Login to use sauceplus.")
     }
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const response: SubscriptionResponse[] = JSON.parse(local_http.GET(SUBSCRIPTIONS_URL, { "User-Agent": USER_AGENT }, true).body)
@@ -140,7 +140,7 @@ function create_platform_video(blog: Post): PlatformVideo | null {
             datetime: new Date(blog.releaseDate).getTime() / 1000,
             duration: blog.metadata.videoDuration,
             viewCount: 0,
-            url: BASE_API_URL + "/v3/content/video/" + (blog.videoAttachments[0]?.id ?? ""),
+            url: PLATFORM_URL + "/post/" + blog.id,
             shareUrl: PLATFORM_URL + "/post/" + blog.id,
             isLive: false
         })
@@ -252,7 +252,7 @@ function getContentDetails(url: string): PlatformContentDetails {
             duration: response.metadata.videoDuration,
             // TODO: implement view count
             viewCount: HARDCODED_ZERO,
-            url: BASE_API_URL + "/v3/content/video/" + (response.videoAttachments[0]?.id ?? ""),
+            url: PLATFORM_URL + "/post/" + response.id,
             shareUrl: PLATFORM_URL + "/post/" + response.id,
             isLive: false,
             video: videos,
@@ -286,12 +286,21 @@ function create_video_source(
             return new VideoUrlSource({
                 width: variant.meta.video.width,
                 height: variant.meta.video.height,
-                container: variant.mimeType,
-                codec: variant.meta.video.codec,
+                container: variant.meta.video.mimeType,
+                codec: variant.meta.video.codecSimple,
                 name: variant.label,
                 bitrate: variant.meta.video.bitrate.average,
                 duration,
-                url: `${origin}${variant.url}`
+                url: `${origin}${variant.url}`,
+                requestModifier: {
+                    headers: {
+                        "Referer": "https://www.sauceplus.com/",
+                        "Origin": "https://www.sauceplus.com"
+                    },
+                    options: {
+                        applyAuthClient: local_state.client_id
+                    }
+                }
             })
         case "hls.fmp4":
             return new HLSSource({
@@ -301,6 +310,10 @@ function create_video_source(
                 priority: true,
                 language: Language.UNKNOWN,
                 requestModifier: {
+                    headers: {
+                        "Referer": "https://www.sauceplus.com/",
+                        "Origin": "https://www.sauceplus.com"
+                    },
                     options: {
                         applyAuthClient: local_state.client_id
                     }
@@ -314,6 +327,10 @@ function create_video_source(
                 priority: false,
                 language: Language.UNKNOWN,
                 requestModifier: {
+                    headers: {
+                        "Referer": "https://www.sauceplus.com/",
+                        "Origin": "https://www.sauceplus.com"
+                    },
                     options: {
                         applyAuthClient: local_state.client_id
                     }
