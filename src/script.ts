@@ -12,7 +12,8 @@ import {
     MediaType,
     Settings,
     State,
-    StreamFormat
+    StreamFormat,
+    Creator
 } from "./types.js"
 
 const PLATFORM = "Sauceplus"
@@ -22,6 +23,8 @@ const PLATFORM_URL = "https://www.sauceplus.com"
 const BASE_API_URL = "https://www.sauceplus.com/api"
 const SUBSCRIPTIONS_URL = `${BASE_API_URL}/v3/user/subscriptions` as const
 const POST_URL = `${BASE_API_URL}/v3/content/post` as const
+const CHANNEL_URL = `${BASE_API_URL}/v3/creator/named` as const
+//const CHANNEL_VIDEO_URL = `${BASE_API_URL}/v3/content/creator` as const
 const DELIVERY_URL = `${BASE_API_URL}/v3/delivery/info` as const
 const LIST_URL = `${BASE_API_URL}/v3/content/creator/list` as const
 
@@ -49,6 +52,9 @@ const local_source: SauceplusSource = {
     getHome,
     isContentDetailsUrl,
     getContentDetails,
+    getChannel,
+    isChannelUrl,
+    getChannelContents,
 }
 init_source(local_source)
 function init_source<
@@ -64,7 +70,7 @@ function init_source<
 }
 //#endregion
 
-//#region enable
+//#region setup
 function enable(conf: SourceConfig, settings: Settings, saved_state?: string | null) {
     if (IS_TESTING) {
         log("IS_TESTING true")
@@ -94,7 +100,6 @@ function enable(conf: SourceConfig, settings: Settings, saved_state?: string | n
         local_state = { client_id }
     }
 }
-//#endregion
 
 function disable() {
     log("Sauceplus log: disabling")
@@ -103,6 +108,7 @@ function disable() {
 function saveState() {
     return JSON.stringify(local_state)
 }
+//#endregion
 
 //#region home
 function getHome(): ContentPager {
@@ -211,7 +217,66 @@ class HomePager extends ContentPager {
 }
 //#endregion
 
-//#region 
+//#region channel
+
+function isChannelUrl(url: string) {
+    return /^https?:\/\/(www\.)?sauceplus\.com\/channel\/[\w\d]+\/home\/([\w\d]+)$/.test(url)
+}
+
+function getChannel(url: string): PlatformChannel {
+    if (!bridge.isLoggedIn()) {
+        throw new LoginRequiredException("login to watch sauceplus")
+    }
+    const match = /channel\/([\w\d]+)\/home\/([\w\d]+)/.exec(url)
+    const creatorUrl: string | undefined = match?.[1]
+
+    if (creatorUrl === undefined) {
+        throw new ScriptException("unreachable")
+    }
+
+    const api_url = new URL(CHANNEL_URL)
+    api_url.searchParams.set("creatorURL[0]", creatorUrl)
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const response: [Creator] = JSON.parse(local_http.GET(api_url.toString(), {}, true).body)
+    const creator = response[0]
+    return new PlatformChannel({
+            id: new PlatformID(PLATFORM, creator.id, plugin.config.id),
+            name: creator.title,
+            thumbnail: creator.icon?.path?? "",
+            url: PLATFORM_URL + "/channel/" + creator.urlname + "/home/" + creator.defaultChannel,
+            description: creator.description,
+            banner: creator.cover?.path ?? "",
+            //links: not a thing,
+            //subscribers: null
+        })
+}
+
+
+function getChannelContents(url: string): ContentPager{
+    if (!bridge.isLoggedIn()) {
+        throw new LoginRequiredException("login to watch sauceplus")
+    }
+    const match = /channel\/([\w\d]+)\/home\/([\w\d]+)/.exec(url)
+    const creatorUrl: string | undefined = match?.[1]
+
+    if (creatorUrl === undefined) {
+        throw new ScriptException("unreachable")
+    }
+
+    const api_url = new URL(CHANNEL_URL)
+    api_url.searchParams.set("creatorURL[0]", creatorUrl)
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const response: [Creator] = JSON.parse(local_http.GET(api_url.toString(), {}, true).body)
+
+    const limit = 10
+    const pager = new HomePager([response[0].id], limit)
+    return pager
+}
+
+//#endregion
+
+//#region content
 function isContentDetailsUrl(url: string) {
     return /^https?:\/\/(www\.)?sauceplus\.com\/post\/[\w\d]+$/.test(url)
 }
@@ -236,14 +301,13 @@ function getContentDetails(url: string): PlatformContentDetails {
             bridge.toast("Mixed content not supported; only showing video")
         }
         const videos = create_video_descriptor(response.videoAttachments)
-
-        return new PlatformVideoDetails({
+        const pvd = new PlatformVideoDetails({
             id: new PlatformID(PLATFORM, post_id, plugin.config.id),
             name: response.title,
             description: response.text,
             thumbnails: create_thumbnails(response.thumbnail),
             author: new PlatformAuthorLink(
-                new PlatformID(PLATFORM, response.channel.creator + ":" + response.channel.id, plugin.config.id),
+                new PlatformID(PLATFORM, response.channel.creator, plugin.config.id),
                 response.channel.title,
                 ChannelUrlFromBlog(response),
                 response.channel.icon?.path ?? ""
@@ -259,6 +323,8 @@ function getContentDetails(url: string): PlatformContentDetails {
             rating: new RatingLikesDislikes(response.likes, response.dislikes),
             subtitles: []
         })
+        log(pvd)
+        return pvd
     }
 
     if (response.metadata.hasAudio) {

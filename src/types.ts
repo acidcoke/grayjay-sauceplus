@@ -17,7 +17,6 @@ export type SauceplusSource = Required<Omit<Source<
     | "searchChannelContents"
     | "search"
     | "getSearchCapabilities"
-    | "getChannelContents"
     | "getChannelCapabilities"
     | "searchChannels"
     | "isPlaylistUrl"
@@ -28,8 +27,6 @@ export type SauceplusSource = Required<Omit<Source<
     | "getUserPlaylists"
     | "getUserSubscriptions"
     | "getContentRecommendations"
-    | "isChannelUrl"
-    | "getChannel"
     | "getShorts"
 >>
 
@@ -61,7 +58,7 @@ export type SubscriptionResponse = {
     readonly plan: SubscriptionPlans
     readonly creator: string
 }
-type Creator = {
+export type Creator = {
     readonly id: string
     readonly owner: string
     readonly title: string
@@ -76,9 +73,10 @@ type Creator = {
     readonly discoverable: boolean
     readonly subscriberCountDisplay: string
     readonly incomeDisplay: boolean
+    readonly defaultChannel: string
     readonly socialLinks?: object
 }
-type Channel = {
+export type Channel = {
     readonly id: string
     readonly creator: string
     readonly title: string
