@@ -14,6 +14,7 @@ import {
   State,
   StreamFormat,
   Creator,
+  Channel,
   SauceplusComment,
 } from "./types.js";
 
@@ -30,6 +31,8 @@ const CHANNEL_URL = `${BASE_API_URL}/v3/creator/named` as const;
 const DELIVERY_URL = `${BASE_API_URL}/v3/delivery/info` as const;
 const LIST_URL = `${BASE_API_URL}/v3/content/creator/list` as const;
 const COMMENT_URL = `${BASE_API_URL}/v3/comment` as const;
+const RELATED_URL = `${BASE_API_URL}/v3/content/related` as const;
+const CREATOR_INFO_URL = `${BASE_API_URL}/v3/creator/info` as const;
 
 const HARDCODED_ZERO = 0;
 const HARDCODED_EMPTY_STRING = "";
@@ -63,6 +66,8 @@ const local_source: SauceplusSource = {
   isChannelUrl,
   getChannelContents,
   getComments,
+  getContentRecommendations,
+  getUserSubscriptions,
 };
 init_source(local_source);
 function init_source<
@@ -299,10 +304,12 @@ function getChannel(url: string): PlatformChannel {
   api_url.searchParams.set("creatorURL[0]", creatorUrl);
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const response: [Creator] = JSON.parse(
+  const response: [(Creator & { channels: Channel[] })] = JSON.parse(
     local_http.GET(api_url.toString(), {}, true).body,
   );
   const creator = response[0];
+  const defaultChan = creator.channels?.find((c) => c.id === creator.defaultChannel);
+  const chanUrlname = defaultChan?.urlname ?? creator.channels?.[0]?.urlname ?? "main";
   return new PlatformChannel({
     id: new PlatformID(PLATFORM, creator.id, plugin.config.id),
     name: creator.title,
@@ -312,7 +319,7 @@ function getChannel(url: string): PlatformChannel {
       "/channel/" +
       creator.urlname +
       "/home/" +
-      creator.defaultChannel,
+      chanUrlname,
     description: creator.description,
     banner: creator.cover?.path ?? "",
     //links: not a thing,
@@ -397,6 +404,7 @@ function getContentDetails(url: string): PlatformContentDetails {
       video: videos,
       rating: new RatingLikesDislikes(response.likes, response.dislikes),
       subtitles: [],
+      getContentRecommendations: () => getContentRecommendations(url),
     });
     log(pvd);
     return pvd;
@@ -517,6 +525,21 @@ function create_video_descriptor(
 }
 //#endregion
 
+//#region recommendations
+function getContentRecommendations(url: string): ContentPager {
+    const post_id = url.split("/post/")[1]
+    if (!post_id) return new ContentPager([], false)
+    const req_url = new URL(RELATED_URL)
+    req_url.searchParams.set("id", post_id)
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const posts: Post[] = JSON.parse(
+        local_http.GET(req_url.toString(), { "User-Agent": USER_AGENT }, true).body
+    )
+    const results = posts.map(create_platform_video).filter((x) => x !== null)
+    return new ContentPager(results, false)
+}
+//#endregion
+
 //#region comments
 function getComments(url: string): CommentPager {
     const post_id = url.split("/post/")[1]
@@ -574,6 +597,30 @@ class SauceplusCommentPager extends CommentPager {
     override hasMorePagers(this: SauceplusCommentPager): boolean {
         return this.hasMore
     }
+}
+//#endregion
+
+//#region subscriptions
+function getUserSubscriptions(): string[] {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const subs: SubscriptionResponse[] = JSON.parse(
+    local_http.GET(SUBSCRIPTIONS_URL, { "User-Agent": USER_AGENT }, true).body,
+  );
+  return subs.flatMap((sub) => {
+    const info_url = new URL(CREATOR_INFO_URL);
+    info_url.searchParams.set("id", sub.creator);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const creator: Creator & { channels: Channel[] } = JSON.parse(
+      local_http.GET(info_url.toString(), { "User-Agent": USER_AGENT }, true).body,
+    );
+    if (!creator.channels?.length) {
+      const defaultChan = creator.defaultChannel;
+      return [PLATFORM_URL + "/channel/" + creator.urlname + "/home/" + defaultChan];
+    }
+    return creator.channels.map((chan) =>
+      PLATFORM_URL + "/channel/" + creator.urlname + "/home/" + chan.urlname,
+    );
+  });
 }
 //#endregion
 
