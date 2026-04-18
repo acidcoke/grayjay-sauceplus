@@ -9,3 +9,6 @@ deploy/script.ts
 tsconfig.tsbuildinfo
 bun.lockb
 package-lock.json
+
+flows
+*.mitm

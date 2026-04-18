@@ -1,83 +1,59 @@
 {
-    "$schema" : "https://github.com/MithrilGoat/GrayJay-Plugin-Schema/releases/latest/download/Schema.json",
-    "name": "Sauceplus",
-    "description": "A content creation and video streaming website created by Open Sauce Inc.",
-    "author": "Acidcoke",
-    "authorUrl": "https://github.com/acidcoke",
-    "platformUrl": "https://sauceplus.com",
-    "sourceUrl": "https://github.com/acidcoke/grayjay-sauceplus/releases/latest/download/config.json",
-    "repositoryUrl": "https://github.com/acidcoke/grayjay-sauceplus",
-    "scriptUrl": "./script.js",
-    "version": 10,
-    "iconUrl": "./icon.png",
-    "id": "9fe6145b-5a4b-4e41-b05c-c65836d4910e",
-    "packages": [
-        "Http"
-    ],
-    "allowEval": false,
-    "allowUrls": [
-        "www.sauceplus.com",
-        "pbs.sauceplus.com",
-        "apm.sauceplus.com",
-        "frontend.sauceplus.com",
-        "sauceplus.com",
-        "cdn-vod-drm0.floatplane.com",
-        "cdn-vod-drm1.floatplane.com",
-        "cdn-vod-drm2.floatplane.com",
-        "cdn-vod-drm3.floatplane.com",
-        "cdn-vod-drm4.floatplane.com",
-        "cdn-vod-drm5.floatplane.com",
-        "cdn-vod-drm6.floatplane.com",
-        "cdn-vod-drm7.floatplane.com",
-        "cdn-vod-drm8.floatplane.com",
-        "cdn-vod-drm9.floatplane.com"
-    ],
-    "settings": [
-        {
-            "variable": "stream_format",
-            "name": "Stream format",
-            "description": "This will reduce clutter in the source selector, especially if there are lots of attachments",
-            "type": "Dropdown",
-            "default": "0",
-            "options": [
-                "HLS",
-                "Legacy HLS",
-                "Flat MP4"
-            ]
-        },
-        {
-            "variable": "log_toasts",
-            "name": "Toast Logging",
-            "description": "Will log details in toasts",
-            "type": "Boolean",
-            "default": "false"
-        }
-    ],
-    "authentication": {
-        "loginUrl": "https://www.sauceplus.com/login",
-        "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
-        "cookiesToFind": [
-            "muxData",
-            "__Host-sp-sess"
-        ],
-        "loginWarning": "Login and then open a video. Try using Discord login"
-    },
-
-    "captcha": {
-        "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
-        "cookiesToFind": [
-            "cf_clearance",
-            "_cfuvid"
-        ]
-    },
-    "changelog": {
-		"10": [
-			"Feature: Enable Subscriptions.",
-			"Feature: Enable Channels."
-		],
-		"9": [
-			"Fix: Enable Video Playback."
-		]
+  "$schema": "https://github.com/MithrilGoat/GrayJay-Plugin-Schema/releases/latest/download/Schema.json",
+  "name": "Sauceplus",
+  "description": "A content creation and video streaming website created by Open Sauce Inc.",
+  "author": "Acidcoke",
+  "authorUrl": "https://github.com/acidcoke",
+  "platformUrl": "https://sauceplus.com",
+  "sourceUrl": "https://github.com/acidcoke/grayjay-sauceplus/releases/latest/download/config.json",
+  "repositoryUrl": "https://github.com/acidcoke/grayjay-sauceplus",
+  "scriptUrl": "./script.js",
+  "version": 11,
+  "iconUrl": "./icon.png",
+  "id": "9fe6145b-5a4b-4e41-b05c-c65836d4910e",
+  "packages": ["Http"],
+  "allowEval": false,
+  "allowUrls": [
+    "www.sauceplus.com",
+    "pbs.sauceplus.com",
+    "apm.sauceplus.com",
+    "frontend.sauceplus.com",
+    "sauceplus.com",
+    "cdn-vod-drm0.floatplane.com",
+    "cdn-vod-drm1.floatplane.com",
+    "cdn-vod-drm2.floatplane.com",
+    "cdn-vod-drm3.floatplane.com",
+    "cdn-vod-drm4.floatplane.com",
+    "cdn-vod-drm5.floatplane.com",
+    "cdn-vod-drm6.floatplane.com",
+    "cdn-vod-drm7.floatplane.com",
+    "cdn-vod-drm8.floatplane.com",
+    "cdn-vod-drm9.floatplane.com"
+  ],
+  "settings": [
+    {
+      "variable": "stream_format",
+      "name": "Stream format",
+      "description": "This will reduce clutter in the source selector, especially if there are lots of attachments",
+      "type": "Dropdown",
+      "default": "0",
+      "options": ["HLS", "Legacy HLS", "Flat MP4"]
     }
+  ],
+  "authentication": {
+    "loginUrl": "https://www.sauceplus.com/login",
+    "userAgent": "Mozilla/5.0 (Linux; Android 14; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Mobile Safari/537.36",
+    "cookiesToFind": ["muxData", "__Host-sp-sess"],
+    "loginWarning": "Enter password AND 2FA code. If Turnstile captcha fails, try Discord login."
+  },
 
+  "captcha": {
+    "userAgent": "Mozilla/5.0 (Linux; Android 14; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Mobile Safari/537.36",
+    "cookiesToFind": ["cf_clearance", "_cfuvid"]
+  },
+  "changelog": {
+    "11": ["Fix: Cloudflare captcha."],
+    "10": ["Feature: Enable Subscriptions.", "Feature: Enable Channels."],
+    "9": ["Fix: Enable Video Playback."]
+  }
 }
