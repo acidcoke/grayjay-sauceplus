@@ -10,8 +10,6 @@ export type SauceplusSource = Required<Omit<Source<
     Settings
 >,
     "searchSuggestions"
-    | "getComments"
-    | "getSubComments"
     | "getSearchChannelContentsCapabilities"
     | "getLiveChatWindow"
     | "searchChannelContents"
@@ -250,5 +248,20 @@ export type CreatorStatus = {
     readonly moreFetchable: boolean
     readonly creatorId: string
     readonly blogPostId: string
+}
+export type SauceplusComment = {
+    readonly id: string
+    readonly blogPost: string
+    readonly user: {
+        readonly id: string
+        readonly username: string
+        readonly profileImage: ParentImage | null
+    }
+    readonly text: string
+    readonly totalReplies: number
+    readonly replies: SauceplusComment[]
+    readonly postDate: string
+    readonly likes: number
+    readonly dislikes: number
 }
 //#endregion

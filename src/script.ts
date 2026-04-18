@@ -14,6 +14,7 @@ import {
   State,
   StreamFormat,
   Creator,
+  SauceplusComment,
 } from "./types.js";
 
 const PLATFORM = "Sauceplus";
@@ -28,6 +29,7 @@ const CHANNEL_URL = `${BASE_API_URL}/v3/creator/named` as const;
 //const CHANNEL_VIDEO_URL = `${BASE_API_URL}/v3/content/creator` as const
 const DELIVERY_URL = `${BASE_API_URL}/v3/delivery/info` as const;
 const LIST_URL = `${BASE_API_URL}/v3/content/creator/list` as const;
+const COMMENT_URL = `${BASE_API_URL}/v3/comment` as const;
 
 const HARDCODED_ZERO = 0;
 const HARDCODED_EMPTY_STRING = "";
@@ -60,6 +62,7 @@ const local_source: SauceplusSource = {
   getChannel,
   isChannelUrl,
   getChannelContents,
+  getComments,
 };
 init_source(local_source);
 function init_source<
@@ -511,6 +514,66 @@ function create_video_descriptor(
       });
     }),
   );
+}
+//#endregion
+
+//#region comments
+function getComments(url: string): CommentPager {
+    const post_id = url.split("/post/")[1]
+    if (!post_id) throw new ScriptException("invalid post url: " + url)
+    return new SauceplusCommentPager(post_id, url, 20, 0)
+}
+
+function sp_comment_to_platform(c: SauceplusComment, context_url: string): PlatformComment {
+    const thumb = c.user.profileImage?.path ?? ""
+    const replies = c.replies
+    return new PlatformComment({
+        contextUrl: context_url,
+        author: new PlatformAuthorLink(
+            new PlatformID(PLATFORM, c.user.id, plugin.config.id),
+            c.user.username,
+            "",
+            thumb,
+        ),
+        message: c.text,
+        replyCount: c.totalReplies,
+        date: Math.floor(new Date(c.postDate).getTime() / 1000),
+        rating: new RatingLikesDislikes(c.likes, c.dislikes),
+        getReplies: () => new CommentPager(
+            replies.map((r) => sp_comment_to_platform(r, context_url)),
+            false,
+        ),
+    })
+}
+
+class SauceplusCommentPager extends CommentPager {
+    private offset: number
+    constructor(
+        private readonly post_id: string,
+        private readonly context_url: string,
+        private readonly limit: number,
+        initial_offset: number,
+    ) {
+        const url = new URL(COMMENT_URL)
+        url.searchParams.set("blogPost", post_id)
+        url.searchParams.set("limit", limit.toString())
+        url.searchParams.set("sortBy", "createdAt")
+        url.searchParams.set("sortDirection", "DESC")
+        if (initial_offset > 0) url.searchParams.set("fetchAfter", initial_offset.toString())
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        const raw: SauceplusComment[] = JSON.parse(
+            local_http.GET(url.toString(), { "User-Agent": USER_AGENT }, true).body
+        )
+        super(raw.map((c) => sp_comment_to_platform(c, context_url)), raw.length === limit)
+        this.offset = initial_offset + raw.length
+    }
+    override nextPage(this: SauceplusCommentPager): SauceplusCommentPager {
+        return new SauceplusCommentPager(this.post_id, this.context_url, this.limit, this.offset)
+    }
+    override hasMorePagers(this: SauceplusCommentPager): boolean {
+        return this.hasMore
+    }
 }
 //#endregion
 
