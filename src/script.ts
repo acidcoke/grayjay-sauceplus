@@ -36,6 +36,7 @@ const CREATOR_INFO_URL = `${BASE_API_URL}/v3/creator/info` as const;
 const PROGRESS_URL = `${BASE_API_URL}/v3/content/progress` as const;
 const CREATOR_SEARCH_URL = `${BASE_API_URL}/v3/creator/list` as const;
 const CREATOR_CONTENT_URL = `${BASE_API_URL}/v3/content/creator` as const;
+const POST_LIST_URL = `${BASE_API_URL}/v3/content/post/list` as const;
 
 const HARDCODED_ZERO = 0;
 const HARDCODED_EMPTY_STRING = "";
@@ -151,22 +152,38 @@ function getHome(): ContentPager {
   if (!bridge.isLoggedIn()) {
     throw new LoginRequiredException("Login to use sauceplus.");
   }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const raw: unknown = JSON.parse(
-    local_http.GET(SUBSCRIPTIONS_URL, { "User-Agent": USER_AGENT }, true).body,
-  );
-  if (!Array.isArray(raw)) {
-    throw new ScriptException("Unexpected subscriptions response: " + JSON.stringify(raw));
-  }
-  const response = raw as SubscriptionResponse[];
-
-  const limit = 20;
-  const pager = new HomePager(
-    response.map((c) => c.creator),
-    limit,
-  );
-  return pager;
+  return new PostListPager(20, 0);
 }
+class PostListPager extends ContentPager {
+  constructor(
+    private readonly limit: number,
+    private readonly offset: number,
+  ) {
+    const body: Record<string, number> = { limit };
+    if (offset > 0) body["fetchAfter"] = offset;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const raw: Post[] | CreatorVideosResponse = JSON.parse(
+      local_http.POST(
+        POST_LIST_URL,
+        JSON.stringify(body),
+        { "Content-Type": "application/json", "User-Agent": USER_AGENT },
+        true,
+      ).body,
+    );
+    const posts: Post[] = Array.isArray(raw) ? raw : (raw.blogPosts ?? []);
+    super(
+      posts.map(create_platform_video).filter((x) => x !== null),
+      posts.length === limit,
+    );
+  }
+  override nextPage(this: PostListPager): PostListPager {
+    return new PostListPager(this.limit, this.offset + this.limit);
+  }
+  override hasMorePagers(this: PostListPager): boolean {
+    return this.hasMore;
+  }
+}
+
 function create_thumbnails(thumbs: ParentImage | null): Thumbnails {
   if (thumbs == null) return new Thumbnails([]);
 
