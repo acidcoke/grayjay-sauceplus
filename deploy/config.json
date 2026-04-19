@@ -8,7 +8,7 @@
   "sourceUrl": "https://github.com/acidcoke/grayjay-sauceplus/releases/latest/download/config.json",
   "repositoryUrl": "https://github.com/acidcoke/grayjay-sauceplus",
   "scriptUrl": "./script.js",
-  "version": 20,
+  "version": 21,
   "iconUrl": "./icon.png",
   "id": "9fe6145b-5a4b-4e41-b05c-c65836d4910e",
   "packages": ["Http"],
@@ -52,6 +52,7 @@
     "cookiesToFind": ["cf_clearance", "_cfuvid"]
   },
   "changelog": {
+    "21": ["Fix: Home feed now correctly uses POST for batch content fetch, enabling pagination."],
     "20": ["Improve: Playback tracking now fetches saved progress on init and reports final position on exit."],
     "19": ["Feature: Home feed now shows all creators via browse endpoint."],
     "18": ["Feature: Enable Search, Channel Contents Search, and Search Suggestions."],

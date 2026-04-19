@@ -237,6 +237,9 @@ export type CreatorVideosResponse = {
     readonly lastElements: CreatorStatus[]
     readonly blogPosts: Post[]
 }
+export type DiscoverCreator = Creator & {
+    readonly featuredBlogPost: Post | null
+}
 export type CreatorStatus = {
     readonly moreFetchable: boolean
     readonly creatorId: string

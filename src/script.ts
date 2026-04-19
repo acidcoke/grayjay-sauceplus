@@ -36,7 +36,6 @@ const CREATOR_INFO_URL = `${BASE_API_URL}/v3/creator/info` as const;
 const PROGRESS_URL = `${BASE_API_URL}/v3/content/progress` as const;
 const CREATOR_SEARCH_URL = `${BASE_API_URL}/v3/creator/list` as const;
 const CREATOR_CONTENT_URL = `${BASE_API_URL}/v3/content/creator` as const;
-const POST_LIST_URL = `${BASE_API_URL}/v3/content/post/list` as const;
 
 const HARDCODED_ZERO = 0;
 const HARDCODED_EMPTY_STRING = "";
@@ -152,36 +151,11 @@ function getHome(): ContentPager {
   if (!bridge.isLoggedIn()) {
     throw new LoginRequiredException("Login to use sauceplus.");
   }
-  return new PostListPager(20, 0);
-}
-class PostListPager extends ContentPager {
-  constructor(
-    private readonly limit: number,
-    private readonly offset: number,
-  ) {
-    const body: Record<string, number> = { limit };
-    if (offset > 0) body["fetchAfter"] = offset;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const raw: Post[] | CreatorVideosResponse = JSON.parse(
-      local_http.POST(
-        POST_LIST_URL,
-        JSON.stringify(body),
-        { "Content-Type": "application/json", "User-Agent": USER_AGENT },
-        true,
-      ).body,
-    );
-    const posts: Post[] = Array.isArray(raw) ? raw : (raw.blogPosts ?? []);
-    super(
-      posts.map(create_platform_video).filter((x) => x !== null),
-      posts.length === limit,
-    );
-  }
-  override nextPage(this: PostListPager): PostListPager {
-    return new PostListPager(this.limit, this.offset + this.limit);
-  }
-  override hasMorePagers(this: PostListPager): boolean {
-    return this.hasMore;
-  }
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const creators: Creator[] = JSON.parse(
+    local_http.GET(CREATOR_SEARCH_URL, { "User-Agent": USER_AGENT }, true).body,
+  );
+  return new HomePager(creators.map((c) => c.id), 20);
 }
 
 function create_thumbnails(thumbs: ParentImage | null): Thumbnails {
@@ -237,69 +211,56 @@ function ChannelUrlFromBlog(blog: Post): string {
 class HomePager extends ContentPager {
   private readonly creators: Record<string, CreatorStatus>;
   constructor(
-    creator_ids: string[],
+    private readonly creator_ids: string[],
     private readonly limit: number,
   ) {
-    const url = new URL(LIST_URL);
-    url.searchParams.set("limit", limit.toString());
-    creator_ids.forEach((creator_id, index) => {
-      url.searchParams.set(`ids[${index.toString()}]`, creator_id);
-    });
-
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const response: CreatorVideosResponse = JSON.parse(
-      local_http.GET(url.toString(), {}, true).body,
+      local_http.POST(
+        LIST_URL,
+        JSON.stringify({ ids: creator_ids, limit }),
+        { "Content-Type": "application/json", "User-Agent": USER_AGENT },
+        true,
+      ).body,
     );
 
     const creators: Record<string, CreatorStatus> = {};
     let has_more = false;
-    for (const data of response.lastElements) {
+    for (const data of (response.lastElements ?? [])) {
       creators[data.creatorId] = data;
       has_more ||= data.moreFetchable;
     }
 
-    const results = response.blogPosts
-      .map(create_platform_video)
-      .filter((x) => x !== null);
-
-    super(results, has_more);
+    super(
+      (response.blogPosts ?? []).map(create_platform_video).filter((x) => x !== null),
+      has_more,
+    );
     this.creators = creators;
   }
   override nextPage(this: HomePager) {
-    const url = new URL(LIST_URL);
-    url.searchParams.set("limit", this.limit.toString());
-    Object.values(this.creators).forEach((creator, index) => {
-      url.searchParams.set(`ids[${index.toString()}]`, creator.creatorId);
-
-      if (creator.blogPostId) {
-        url.searchParams.set(
-          `fetchAfter[${index.toString()}][creatorId]`,
-          creator.creatorId,
-        );
-        url.searchParams.set(
-          `fetchAfter[${index.toString()}][blogPostId]`,
-          creator.blogPostId,
-        );
-        url.searchParams.set(
-          `fetchAfter[${index.toString()}][moreFetchable]`,
-          creator.moreFetchable.toString(),
-        );
-      }
-    });
-
+    const fetchAfter = Object.values(this.creators).map((c) => ({
+      creatorId: c.creatorId,
+      blogPostId: c.blogPostId,
+      moreFetchable: c.moreFetchable,
+    }));
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const response: CreatorVideosResponse = JSON.parse(
-      local_http.GET(url.toString(), { "User-Agent": USER_AGENT }, true).body,
+      local_http.POST(
+        LIST_URL,
+        JSON.stringify({ ids: this.creator_ids, limit: this.limit, fetchAfter }),
+        { "Content-Type": "application/json", "User-Agent": USER_AGENT },
+        true,
+      ).body,
     );
 
     let has_more = false;
-    for (const data of response.lastElements) {
+    for (const data of (response.lastElements ?? [])) {
       this.creators[data.creatorId] = data;
       has_more ||= data.moreFetchable;
     }
 
     this.hasMore = has_more;
-    this.results = response.blogPosts
+    this.results = (response.blogPosts ?? [])
       .map(create_platform_video)
       .filter((x) => x !== null);
     return this;
