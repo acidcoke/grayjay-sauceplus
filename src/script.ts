@@ -35,6 +35,7 @@ const RELATED_URL = `${BASE_API_URL}/v3/content/related` as const;
 const CREATOR_INFO_URL = `${BASE_API_URL}/v3/creator/info` as const;
 const PROGRESS_URL = `${BASE_API_URL}/v3/content/progress` as const;
 const CREATOR_SEARCH_URL = `${BASE_API_URL}/v3/creator/list` as const;
+const CREATOR_CONTENT_URL = `${BASE_API_URL}/v3/content/creator` as const;
 
 const HARDCODED_ZERO = 0;
 const HARDCODED_EMPTY_STRING = "";
@@ -72,6 +73,9 @@ const local_source: SauceplusSource = {
   getUserSubscriptions,
   getPlaybackTracker,
   searchChannels,
+  searchSuggestions,
+  search,
+  searchChannelContents,
 };
 init_source(local_source);
 function init_source<
@@ -148,9 +152,13 @@ function getHome(): ContentPager {
     throw new LoginRequiredException("Login to use sauceplus.");
   }
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const response: SubscriptionResponse[] = JSON.parse(
+  const raw: unknown = JSON.parse(
     local_http.GET(SUBSCRIPTIONS_URL, { "User-Agent": USER_AGENT }, true).body,
   );
+  if (!Array.isArray(raw)) {
+    throw new ScriptException("Unexpected subscriptions response: " + JSON.stringify(raw));
+  }
+  const response = raw as SubscriptionResponse[];
 
   const limit = 20;
   const pager = new HomePager(
@@ -661,6 +669,83 @@ function getPlaybackTracker(url: string): PlaybackTracker | null {
 //#endregion
 
 //#region search
+function searchSuggestions(query: string): string[] {
+  if (!bridge.isLoggedIn()) {
+    throw new LoginRequiredException("login to search sauceplus");
+  }
+  const creator_url = new URL(CREATOR_SEARCH_URL);
+  creator_url.searchParams.set("search", query);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const creators: Creator[] = JSON.parse(
+    local_http.GET(creator_url.toString(), { "User-Agent": USER_AGENT }, true).body,
+  );
+  const creator_titles = creators.map((c) => c.title);
+  const video_titles = creators.flatMap((creator) => {
+    const content_url = new URL(CREATOR_CONTENT_URL);
+    content_url.searchParams.set("id", creator.id);
+    content_url.searchParams.set("search", query);
+    content_url.searchParams.set("limit", "5");
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const raw: CreatorVideosResponse | Post[] = JSON.parse(
+      local_http.GET(content_url.toString(), { "User-Agent": USER_AGENT }, true).body,
+    );
+    const posts: Post[] = Array.isArray(raw) ? raw : (raw.blogPosts ?? []);
+    return posts.map((p) => p.title);
+  });
+  return [...new Set([...creator_titles, ...video_titles])];
+}
+
+function search(query: string): ContentPager {
+  if (!bridge.isLoggedIn()) {
+    throw new LoginRequiredException("login to search sauceplus");
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const creators: Creator[] = JSON.parse(
+    local_http.GET(CREATOR_SEARCH_URL, { "User-Agent": USER_AGENT }, true).body,
+  );
+  const allResults = creators.flatMap(
+    (creator) => new SearchContentPager(creator.id, query, 20).results,
+  );
+  return new ContentPager(allResults, false);
+}
+
+function searchChannelContents(channelUrl: string, query: string): ContentPager {
+  if (!bridge.isLoggedIn()) {
+    throw new LoginRequiredException("login to search sauceplus");
+  }
+  const match = /channel\/([\w\d]+)\/home\/([\w\d]+)/.exec(channelUrl);
+  const creatorUrl = match?.[1];
+  if (!creatorUrl) throw new ScriptException("unreachable");
+
+  const api_url = new URL(CHANNEL_URL);
+  api_url.searchParams.set("creatorURL[0]", creatorUrl);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const response: [Creator] = JSON.parse(
+    local_http.GET(api_url.toString(), {}, true).body,
+  );
+  return new SearchContentPager(response[0].id, query, 20);
+}
+
+class SearchContentPager extends ContentPager {
+  constructor(creator_id: string, query: string, limit: number) {
+    const url = new URL(CREATOR_CONTENT_URL);
+    url.searchParams.set("id", creator_id);
+    url.searchParams.set("search", query);
+    url.searchParams.set("limit", limit.toString());
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const raw: CreatorVideosResponse | Post[] = JSON.parse(
+      local_http.GET(url.toString(), { "User-Agent": USER_AGENT }, true).body,
+    );
+    const posts: Post[] = Array.isArray(raw) ? raw : (raw.blogPosts ?? []);
+    super(
+      posts.map(create_platform_video).filter((x) => x !== null),
+      false,
+    );
+  }
+  override nextPage(): ContentPager { return this; }
+  override hasMorePagers(): boolean { return false; }
+}
+
 function searchChannels(query: string): ChannelPager {
   return new CreatorSearchPager(query);
 }

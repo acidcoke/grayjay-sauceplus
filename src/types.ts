@@ -9,11 +9,8 @@ export type SauceplusSource = Required<Omit<Source<
     never,
     Settings
 >,
-    "searchSuggestions"
-    | "getSearchChannelContentsCapabilities"
+    "getSearchChannelContentsCapabilities"
     | "getLiveChatWindow"
-    | "searchChannelContents"
-    | "search"
     | "getSearchCapabilities"
     | "getChannelCapabilities"
     | "isPlaylistUrl"
