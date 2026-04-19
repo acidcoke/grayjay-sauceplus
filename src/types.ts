@@ -21,7 +21,6 @@ export type SauceplusSource = Required<Omit<Source<
     | "getPlaylist"
     | "searchPlaylists"
     | "getChannelPlaylists"
-    | "getPlaybackTracker"
     | "getUserPlaylists"
     | "getShorts"
 >>

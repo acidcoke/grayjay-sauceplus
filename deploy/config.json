@@ -8,7 +8,7 @@
   "sourceUrl": "https://github.com/acidcoke/grayjay-sauceplus/releases/latest/download/config.json",
   "repositoryUrl": "https://github.com/acidcoke/grayjay-sauceplus",
   "scriptUrl": "./script.js",
-  "version": 15,
+  "version": 16,
   "iconUrl": "./icon.png",
   "id": "9fe6145b-5a4b-4e41-b05c-c65836d4910e",
   "packages": ["Http"],
@@ -52,6 +52,7 @@
     "cookiesToFind": ["cf_clearance", "_cfuvid"]
   },
   "changelog": {
+    "16": ["Feature: Enable Playback Tracking."],
     "15": ["Fix: Subscription state now correct for all sub-channels."],
     "14": ["Fix: Subscription feed now populated via getUserSubscriptions.", "Fix: getChannel URL now uses correct channel urlname."],
     "13": ["Feature: Enable Recommendations."],

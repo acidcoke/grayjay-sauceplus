@@ -33,6 +33,7 @@ const LIST_URL = `${BASE_API_URL}/v3/content/creator/list` as const;
 const COMMENT_URL = `${BASE_API_URL}/v3/comment` as const;
 const RELATED_URL = `${BASE_API_URL}/v3/content/related` as const;
 const CREATOR_INFO_URL = `${BASE_API_URL}/v3/creator/info` as const;
+const PROGRESS_URL = `${BASE_API_URL}/v3/content/progress` as const;
 
 const HARDCODED_ZERO = 0;
 const HARDCODED_EMPTY_STRING = "";
@@ -68,6 +69,7 @@ const local_source: SauceplusSource = {
   getComments,
   getContentRecommendations,
   getUserSubscriptions,
+  getPlaybackTracker,
 };
 init_source(local_source);
 function init_source<
@@ -304,22 +306,20 @@ function getChannel(url: string): PlatformChannel {
   api_url.searchParams.set("creatorURL[0]", creatorUrl);
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const response: [(Creator & { channels: Channel[] })] = JSON.parse(
+  const response: [Creator & { channels: Channel[] }] = JSON.parse(
     local_http.GET(api_url.toString(), {}, true).body,
   );
   const creator = response[0];
-  const defaultChan = creator.channels?.find((c) => c.id === creator.defaultChannel);
-  const chanUrlname = defaultChan?.urlname ?? creator.channels?.[0]?.urlname ?? "main";
+  const defaultChan = creator.channels.find(
+    (c) => c.id === creator.defaultChannel,
+  );
+  const chanUrlname =
+    defaultChan?.urlname ?? creator.channels[0]?.urlname ?? "main";
   return new PlatformChannel({
     id: new PlatformID(PLATFORM, creator.id, plugin.config.id),
     name: creator.title,
     thumbnail: creator.icon?.path ?? "",
-    url:
-      PLATFORM_URL +
-      "/channel/" +
-      creator.urlname +
-      "/home/" +
-      chanUrlname,
+    url: PLATFORM_URL + "/channel/" + creator.urlname + "/home/" + chanUrlname,
     description: creator.description,
     banner: creator.cover?.path ?? "",
     //links: not a thing,
@@ -527,76 +527,134 @@ function create_video_descriptor(
 
 //#region recommendations
 function getContentRecommendations(url: string): ContentPager {
-    const post_id = url.split("/post/")[1]
-    if (!post_id) return new ContentPager([], false)
-    const req_url = new URL(RELATED_URL)
-    req_url.searchParams.set("id", post_id)
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const posts: Post[] = JSON.parse(
-        local_http.GET(req_url.toString(), { "User-Agent": USER_AGENT }, true).body
-    )
-    const results = posts.map(create_platform_video).filter((x) => x !== null)
-    return new ContentPager(results, false)
+  const post_id = url.split("/post/")[1];
+  if (!post_id) return new ContentPager([], false);
+  const req_url = new URL(RELATED_URL);
+  req_url.searchParams.set("id", post_id);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const posts: Post[] = JSON.parse(
+    local_http.GET(req_url.toString(), { "User-Agent": USER_AGENT }, true).body,
+  );
+  const results = posts.map(create_platform_video).filter((x) => x !== null);
+  return new ContentPager(results, false);
 }
 //#endregion
 
 //#region comments
 function getComments(url: string): CommentPager {
-    const post_id = url.split("/post/")[1]
-    if (!post_id) throw new ScriptException("invalid post url: " + url)
-    return new SauceplusCommentPager(post_id, url, 20, 0)
+  const post_id = url.split("/post/")[1];
+  if (!post_id) throw new ScriptException("invalid post url: " + url);
+  return new SauceplusCommentPager(post_id, url, 20, 0);
 }
 
-function sp_comment_to_platform(c: SauceplusComment, context_url: string): PlatformComment {
-    const thumb = c.user.profileImage?.path ?? ""
-    const replies = c.replies
-    return new PlatformComment({
-        contextUrl: context_url,
-        author: new PlatformAuthorLink(
-            new PlatformID(PLATFORM, c.user.id, plugin.config.id),
-            c.user.username,
-            "",
-            thumb,
-        ),
-        message: c.text,
-        replyCount: c.totalReplies,
-        date: Math.floor(new Date(c.postDate).getTime() / 1000),
-        rating: new RatingLikesDislikes(c.likes, c.dislikes),
-        getReplies: () => new CommentPager(
-            replies.map((r) => sp_comment_to_platform(r, context_url)),
-            false,
-        ),
-    })
+function sp_comment_to_platform(
+  c: SauceplusComment,
+  context_url: string,
+): PlatformComment {
+  const thumb = c.user.profileImage?.path ?? "";
+  const replies = c.replies;
+  return new PlatformComment({
+    contextUrl: context_url,
+    author: new PlatformAuthorLink(
+      new PlatformID(PLATFORM, c.user.id, plugin.config.id),
+      c.user.username,
+      "",
+      thumb,
+    ),
+    message: c.text,
+    replyCount: c.totalReplies,
+    date: Math.floor(new Date(c.postDate).getTime() / 1000),
+    rating: new RatingLikesDislikes(c.likes, c.dislikes),
+    getReplies: () =>
+      new CommentPager(
+        replies.map((r) => sp_comment_to_platform(r, context_url)),
+        false,
+      ),
+  });
 }
 
 class SauceplusCommentPager extends CommentPager {
-    private offset: number
-    constructor(
-        private readonly post_id: string,
-        private readonly context_url: string,
-        private readonly limit: number,
-        initial_offset: number,
-    ) {
-        const url = new URL(COMMENT_URL)
-        url.searchParams.set("blogPost", post_id)
-        url.searchParams.set("limit", limit.toString())
-        url.searchParams.set("sortBy", "createdAt")
-        url.searchParams.set("sortDirection", "DESC")
-        if (initial_offset > 0) url.searchParams.set("fetchAfter", initial_offset.toString())
+  private offset: number;
+  constructor(
+    private readonly post_id: string,
+    private readonly context_url: string,
+    private readonly limit: number,
+    initial_offset: number,
+  ) {
+    const url = new URL(COMMENT_URL);
+    url.searchParams.set("blogPost", post_id);
+    url.searchParams.set("limit", limit.toString());
+    url.searchParams.set("sortBy", "createdAt");
+    url.searchParams.set("sortDirection", "DESC");
+    if (initial_offset > 0)
+      url.searchParams.set("fetchAfter", initial_offset.toString());
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const raw: SauceplusComment[] = JSON.parse(
-            local_http.GET(url.toString(), { "User-Agent": USER_AGENT }, true).body
-        )
-        super(raw.map((c) => sp_comment_to_platform(c, context_url)), raw.length === limit)
-        this.offset = initial_offset + raw.length
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const raw: SauceplusComment[] = JSON.parse(
+      local_http.GET(url.toString(), { "User-Agent": USER_AGENT }, true).body,
+    );
+    super(
+      raw.map((c) => sp_comment_to_platform(c, context_url)),
+      raw.length === limit,
+    );
+    this.offset = initial_offset + raw.length;
+  }
+  override nextPage(this: SauceplusCommentPager): SauceplusCommentPager {
+    return new SauceplusCommentPager(
+      this.post_id,
+      this.context_url,
+      this.limit,
+      this.offset,
+    );
+  }
+  override hasMorePagers(this: SauceplusCommentPager): boolean {
+    return this.hasMore;
+  }
+}
+//#endregion
+
+//#region playback
+class SauceplusPlaybackTracker extends PlaybackTracker {
+  constructor(private readonly attachment_ids: string[]) {
+    super(60_000);
+  }
+  override onInit(seconds: number): void {
+    this.report(seconds);
+  }
+  override onProgress(seconds: number, _is_playing: boolean): void {
+    this.report(seconds);
+  }
+  override onConcluded(): void {}
+  private report(seconds: number): void {
+    for (const id of this.attachment_ids) {
+      local_http.POST(
+        PROGRESS_URL,
+        JSON.stringify({
+          id,
+          contentType: "video",
+          progress: Math.floor(seconds),
+        }),
+        { "Content-Type": "application/json", "User-Agent": USER_AGENT },
+        true,
+      );
     }
-    override nextPage(this: SauceplusCommentPager): SauceplusCommentPager {
-        return new SauceplusCommentPager(this.post_id, this.context_url, this.limit, this.offset)
-    }
-    override hasMorePagers(this: SauceplusCommentPager): boolean {
-        return this.hasMore
-    }
+  }
+}
+
+function getPlaybackTracker(url: string): PlaybackTracker | null {
+  const post_id = url.split("/post/")[1];
+  if (!post_id) return null;
+  const api_url = new URL(POST_URL);
+  api_url.searchParams.set("id", post_id);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const response: Post = JSON.parse(
+    local_http.GET(api_url.toString(), { "User-Agent": USER_AGENT }, true).body,
+  );
+  if (!response.metadata.hasVideo || response.videoAttachments.length === 0)
+    return null;
+  return new SauceplusPlaybackTracker(
+    response.videoAttachments.map((v) => v.id),
+  );
 }
 //#endregion
 
@@ -611,14 +669,18 @@ function getUserSubscriptions(): string[] {
     info_url.searchParams.set("id", sub.creator);
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const creator: Creator & { channels: Channel[] } = JSON.parse(
-      local_http.GET(info_url.toString(), { "User-Agent": USER_AGENT }, true).body,
+      local_http.GET(info_url.toString(), { "User-Agent": USER_AGENT }, true)
+        .body,
     );
     if (!creator.channels?.length) {
       const defaultChan = creator.defaultChannel;
-      return [PLATFORM_URL + "/channel/" + creator.urlname + "/home/" + defaultChan];
+      return [
+        PLATFORM_URL + "/channel/" + creator.urlname + "/home/" + defaultChan,
+      ];
     }
-    return creator.channels.map((chan) =>
-      PLATFORM_URL + "/channel/" + creator.urlname + "/home/" + chan.urlname,
+    return creator.channels.map(
+      (chan) =>
+        PLATFORM_URL + "/channel/" + creator.urlname + "/home/" + chan.urlname,
     );
   });
 }
