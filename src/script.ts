@@ -120,9 +120,9 @@ function enable(
   }
   local_settings = settings;
 
-  if (!bridge.isLoggedIn()) {
-    throw new LoginRequiredException("login to watch sauceplus");
-  }
+  //if (!bridge.isLoggedIn()) {
+  //throw new LoginRequiredException("login to watch sauceplus");
+  //}
 
   const client_id = local_http.getDefaultClient(true).clientId;
   if (client_id === undefined) {
@@ -642,25 +642,41 @@ class SauceplusCommentPager extends CommentPager {
 
 //#region playback
 class SauceplusPlaybackTracker extends PlaybackTracker {
-  constructor(private readonly attachment_ids: string[]) {
+  private last_seconds = 0;
+  constructor(
+    private readonly post_id: string,
+    private readonly attachments: { id: string; duration: number }[],
+  ) {
     super(60_000);
   }
   override onInit(seconds: number): void {
-    this.report(seconds);
-  }
-  override onProgress(seconds: number, _is_playing: boolean): void {
-    this.report(seconds);
-  }
-  override onConcluded(): void {}
-  private report(seconds: number): void {
-    for (const id of this.attachment_ids) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const response: { id: string; progress: number }[] = JSON.parse(
       local_http.POST(
         PROGRESS_URL,
-        JSON.stringify({
-          id,
-          contentType: "video",
-          progress: Math.floor(seconds),
-        }),
+        JSON.stringify({ ids: [this.post_id], contentType: "blogPost" }),
+        { "Content-Type": "application/json", "User-Agent": USER_AGENT },
+        true,
+      ).body,
+    );
+    const saved_pct = response.find((p) => p.id === this.post_id)?.progress ?? 0;
+    const primary_duration = this.attachments[0]?.duration ?? 0;
+    const saved_seconds = (saved_pct / 100) * primary_duration;
+    this.last_seconds = Math.max(seconds, saved_seconds);
+    this.report(this.last_seconds);
+  }
+  override onProgress(seconds: number, is_playing: boolean): void {
+    this.last_seconds = seconds;
+    if (is_playing) this.report(seconds);
+  }
+  override onConcluded(): void {
+    this.report(this.last_seconds);
+  }
+  private report(seconds: number): void {
+    for (const { id } of this.attachments) {
+      local_http.POST(
+        PROGRESS_URL,
+        JSON.stringify({ id, contentType: "video", progress: Math.floor(seconds) }),
         { "Content-Type": "application/json", "User-Agent": USER_AGENT },
         true,
       );
@@ -680,7 +696,8 @@ function getPlaybackTracker(url: string): PlaybackTracker | null {
   if (!response.metadata.hasVideo || response.videoAttachments.length === 0)
     return null;
   return new SauceplusPlaybackTracker(
-    response.videoAttachments.map((v) => v.id),
+    post_id,
+    response.videoAttachments.map((v) => ({ id: v.id, duration: v.duration })),
   );
 }
 //#endregion
