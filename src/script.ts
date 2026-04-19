@@ -34,6 +34,7 @@ const COMMENT_URL = `${BASE_API_URL}/v3/comment` as const;
 const RELATED_URL = `${BASE_API_URL}/v3/content/related` as const;
 const CREATOR_INFO_URL = `${BASE_API_URL}/v3/creator/info` as const;
 const PROGRESS_URL = `${BASE_API_URL}/v3/content/progress` as const;
+const CREATOR_SEARCH_URL = `${BASE_API_URL}/v3/creator/list` as const;
 
 const HARDCODED_ZERO = 0;
 const HARDCODED_EMPTY_STRING = "";
@@ -70,6 +71,7 @@ const local_source: SauceplusSource = {
   getContentRecommendations,
   getUserSubscriptions,
   getPlaybackTracker,
+  searchChannels,
 };
 init_source(local_source);
 function init_source<
@@ -655,6 +657,52 @@ function getPlaybackTracker(url: string): PlaybackTracker | null {
   return new SauceplusPlaybackTracker(
     response.videoAttachments.map((v) => v.id),
   );
+}
+//#endregion
+
+//#region search
+function searchChannels(query: string): ChannelPager {
+  return new CreatorSearchPager(query);
+}
+
+class CreatorSearchPager extends ChannelPager {
+  constructor(query: string) {
+    const url = new URL(CREATOR_SEARCH_URL);
+    url.searchParams.set("search", query);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const results: (Creator & { channels: Channel[] })[] = JSON.parse(
+      local_http.GET(url.toString(), { "User-Agent": USER_AGENT }, true).body,
+    );
+    super(
+      results.map((creator) => {
+        const defaultChan = creator.channels?.find(
+          (c) => c.id === creator.defaultChannel,
+        );
+        const chanUrlname =
+          defaultChan?.urlname ?? creator.channels?.[0]?.urlname ?? "main";
+        return new PlatformChannel({
+          id: new PlatformID(PLATFORM, creator.id, plugin.config.id),
+          name: creator.title,
+          thumbnail: creator.icon?.path ?? "",
+          url:
+            PLATFORM_URL +
+            "/channel/" +
+            creator.urlname +
+            "/home/" +
+            chanUrlname,
+          description: creator.description,
+          banner: creator.cover?.path ?? "",
+        });
+      }),
+      false,
+    );
+  }
+  override nextPage(): ChannelPager {
+    return this;
+  }
+  override hasMorePagers(): boolean {
+    return false;
+  }
 }
 //#endregion
 
