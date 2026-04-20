@@ -702,26 +702,14 @@ function searchSuggestions(query: string): string[] {
   if (!bridge.isLoggedIn()) {
     throw new LoginRequiredException("login to search sauceplus");
   }
-  const creator_url = new URL(CREATOR_SEARCH_URL);
-  creator_url.searchParams.set("search", query);
+  const url = new URL(CONTENT_SEARCH_URL);
+  url.searchParams.set("text", query);
+  url.searchParams.set("perPage", "5");
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const creators: Creator[] = JSON.parse(
-    local_http.GET(creator_url.toString(), { "User-Agent": USER_AGENT }, true).body,
+  const resp: ContentSearchResponse = JSON.parse(
+    local_http.GET(url.toString(), { "User-Agent": USER_AGENT }, true).body,
   );
-  const creator_titles = creators.map((c) => c.title);
-  const video_titles = creators.flatMap((creator) => {
-    const content_url = new URL(CREATOR_CONTENT_URL);
-    content_url.searchParams.set("id", creator.id);
-    content_url.searchParams.set("search", query);
-    content_url.searchParams.set("limit", "5");
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const raw: CreatorVideosResponse | Post[] = JSON.parse(
-      local_http.GET(content_url.toString(), { "User-Agent": USER_AGENT }, true).body,
-    );
-    const posts: Post[] = Array.isArray(raw) ? raw : (raw.blogPosts ?? []);
-    return posts.map((p) => p.title);
-  });
-  return [...new Set([...creator_titles, ...video_titles])];
+  return [...new Set(resp.hits.map((h) => h.document.title))];
 }
 
 function search(query: string): ContentPager {
