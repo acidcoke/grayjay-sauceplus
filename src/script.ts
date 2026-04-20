@@ -16,6 +16,8 @@ import {
   Creator,
   Channel,
   SauceplusComment,
+  ContentSearchResponse,
+  ContentSearchDocument,
 } from "./types.js";
 
 const PLATFORM = "Sauceplus";
@@ -36,6 +38,7 @@ const CREATOR_INFO_URL = `${BASE_API_URL}/v3/creator/info` as const;
 const PROGRESS_URL = `${BASE_API_URL}/v3/content/progress` as const;
 const CREATOR_SEARCH_URL = `${BASE_API_URL}/v3/creator/list` as const;
 const CREATOR_CONTENT_URL = `${BASE_API_URL}/v3/content/creator` as const;
+const CONTENT_SEARCH_URL = `${BASE_API_URL}/v3/content/search` as const;
 
 const HARDCODED_ZERO = 0;
 const HARDCODED_EMPTY_STRING = "";
@@ -206,6 +209,37 @@ function ChannelUrlFromBlog(blog: Post): string {
     "/home/" +
     blog.channel.urlname
   );
+}
+
+function create_platform_video_from_search(
+  doc: ContentSearchDocument,
+): PlatformVideo | null {
+  if (!doc.metadata.hasVideo) return null;
+  return new PlatformVideo({
+    id: new PlatformID("Sauceplus", doc.id, plugin.config.id),
+    name: doc.title,
+    thumbnails: create_thumbnails(doc.thumbnail),
+    author: new PlatformAuthorLink(
+      new PlatformID(
+        "Sauceplus",
+        doc.creator.id + ":" + doc.channel.id,
+        plugin.config.id,
+      ),
+      doc.channel.title,
+      PLATFORM_URL +
+        "/channel/" +
+        doc.creator.urlname +
+        "/home/" +
+        doc.channel.urlname,
+      doc.channel.icon?.path ?? "",
+    ),
+    datetime: new Date(doc.releaseDate).getTime() / 1000,
+    duration: doc.metadata.videoDuration,
+    viewCount: 0,
+    url: PLATFORM_URL + "/post/" + doc.id,
+    shareUrl: PLATFORM_URL + "/post/" + doc.id,
+    isLive: false,
+  });
 }
 
 class HomePager extends ContentPager {
@@ -694,14 +728,49 @@ function search(query: string): ContentPager {
   if (!bridge.isLoggedIn()) {
     throw new LoginRequiredException("login to search sauceplus");
   }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const creators: Creator[] = JSON.parse(
-    local_http.GET(CREATOR_SEARCH_URL, { "User-Agent": USER_AGENT }, true).body,
-  );
-  const allResults = creators.flatMap(
-    (creator) => new SearchContentPager(creator.id, query, 20).results,
-  );
-  return new ContentPager(allResults, false);
+  return new GlobalSearchPager(query, 20);
+}
+
+class GlobalSearchPager extends ContentPager {
+  private page = 1;
+  constructor(
+    private readonly query: string,
+    private readonly per_page: number,
+  ) {
+    const resp = GlobalSearchPager.fetch(query, 1, per_page);
+    super(
+      resp.hits
+        .map((h) => create_platform_video_from_search(h.document))
+        .filter((x) => x !== null),
+      1 * per_page < resp.found,
+    );
+  }
+  private static fetch(
+    query: string,
+    page: number,
+    per_page: number,
+  ): ContentSearchResponse {
+    const url = new URL(CONTENT_SEARCH_URL);
+    url.searchParams.set("text", query);
+    url.searchParams.set("page", page.toString());
+    url.searchParams.set("perPage", per_page.toString());
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    return JSON.parse(
+      local_http.GET(url.toString(), { "User-Agent": USER_AGENT }, true).body,
+    );
+  }
+  override nextPage(this: GlobalSearchPager) {
+    this.page += 1;
+    const resp = GlobalSearchPager.fetch(this.query, this.page, this.per_page);
+    this.results = resp.hits
+      .map((h) => create_platform_video_from_search(h.document))
+      .filter((x) => x !== null);
+    this.hasMore = this.page * this.per_page < resp.found;
+    return this;
+  }
+  override hasMorePagers(this: GlobalSearchPager): boolean {
+    return this.hasMore;
+  }
 }
 
 function searchChannelContents(channelUrl: string, query: string): ContentPager {

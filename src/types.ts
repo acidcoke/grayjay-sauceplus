@@ -139,7 +139,7 @@ export type Post = {
     readonly pictureAttachments: PictureAttachment[]
     readonly galleryAttachments: GalleryAttachment[]
 }
-type PostMetadata = {
+export type PostMetadata = {
     readonly hasVideo: boolean
     readonly videoCount: number
     readonly videoDuration: number
@@ -151,6 +151,59 @@ type PostMetadata = {
     readonly hasGallery: boolean
     readonly galleryCount: number
     readonly isFeatured: boolean
+}
+export type ContentSearchResponse = {
+    readonly query: string
+    readonly page: number
+    readonly perPage: number
+    readonly found: number
+    readonly hits: ReadonlyArray<ContentSearchHit>
+}
+export type ContentSearchHit = {
+    readonly highlights: ReadonlyArray<{
+        readonly field: string
+        readonly matched_tokens: string[]
+        readonly snippet: string
+    }>
+    readonly text_match: number
+    readonly document: ContentSearchDocument
+}
+export type ContentSearchDocument = {
+    readonly id: string
+    readonly guid: string
+    readonly title: string
+    readonly text: string
+    readonly textMarkdown: string
+    readonly type: "blogPost"
+    readonly thumbnail: ParentImage | null
+    readonly tags: string[]
+    readonly releaseDate: string
+    readonly likes: number
+    readonly dislikes: number
+    readonly score: number
+    readonly comments: number
+    readonly isAccessible: boolean
+    readonly metadata: PostMetadata
+    readonly userInteraction: unknown[]
+    readonly selfUserInteraction: unknown | null
+    readonly creator: SearchCreator
+    readonly channel: SearchChannel
+}
+type SearchCreator = {
+    readonly id: string
+    readonly title: string
+    readonly urlname: string
+    readonly description: string
+    readonly about: string
+    readonly category: string
+    readonly icon: ParentImage | null
+}
+type SearchChannel = {
+    readonly id: string
+    readonly title: string
+    readonly urlname: string
+    readonly about: string
+    readonly icon: ParentImage | null
 }
 interface Attachment {
     readonly id: string
