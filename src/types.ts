@@ -1,17 +1,54 @@
 //#region custom types
+export type Filters =
+    | "DATE_FILTER"
+    | "DURATION_FILTER"
+    | "CONTENT_TYPE_FILTER"
+
+export const enum DurationOptions {
+    short = "Short (< 4 min)",
+    medium = "Medium (4-20 min)",
+    long = "Long (> 20 min)",
+}
+
+export const enum DateOptions {
+    last_hour = "Last hour",
+    today = "Today",
+    last_week = "Last week",
+    last_month = "Last month",
+    last_year = "Last year",
+}
+
+export const enum ContentTypeOptions {
+    video = "Video",
+    audio = "Audio",
+    picture = "Picture",
+    text = "Text",
+}
+
+export type FilterOptions = DateOptions | DurationOptions | ContentTypeOptions
+
+export type FilterGroups = FilterGroup<Filters, FilterOptions, FilterCapability<FilterOptions>[]>[]
+
+export type OtherFilters = {
+    "DATE_FILTER"?: [DateOptions],
+    "DURATION_FILTER"?: [DurationOptions],
+    "CONTENT_TYPE_FILTER"?: ContentTypeOptions[],
+}
+
+export type SauceplusSearchType = typeof Type.Feed.Videos
+export type SauceplusChannelSearchType = typeof Type.Feed.Videos
+
 export type SauceplusSource = Required<Omit<Source<
+    Filters,
+    FilterOptions,
+    FilterGroups,
+    OtherFilters,
+    SauceplusSearchType,
     never,
-    never,
-    never,
-    never,
-    never,
-    never,
-    never,
+    SauceplusChannelSearchType,
     Settings
 >,
-    "getSearchChannelContentsCapabilities"
-    | "getLiveChatWindow"
-    | "getSearchCapabilities"
+    "getLiveChatWindow"
     | "getChannelCapabilities"
     | "isPlaylistUrl"
     | "getPlaylist"

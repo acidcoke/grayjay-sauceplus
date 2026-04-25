@@ -27,7 +27,7 @@ Or scan the QR code from the Grayjay app
 
 ## Development
 
-0. Using [these swagger docs](https://jman012.github.io/SauceplusAPIDocs/SwaggerUI-full/)
+0. Using [these swagger docs](https://jman012.github.io/SauceplusAPIDocs/SwaggerUI-full/). A snapshot of the community-maintained Floatplane OpenAPI spec (from [jamamp/FloatplaneAPI](https://github.com/jamamp/FloatplaneAPI), MIT-licensed) lives at [`docs/floatplane-openapi-specification.json`](docs/floatplane-openapi-specification.json) for local reference. Sauceplus-only extensions (e.g. `GET /api/v3/content/search`) are added inline in that file under the `Sauceplus Extensions` tag.
 1. install typescript (`tsc`) and `node/npm`, `deno` or, `bun`
 2. `npm update`
 3. `tsc`

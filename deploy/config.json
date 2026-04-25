@@ -8,7 +8,7 @@
   "sourceUrl": "https://github.com/acidcoke/grayjay-sauceplus/releases/latest/download/config.json",
   "repositoryUrl": "https://github.com/acidcoke/grayjay-sauceplus",
   "scriptUrl": "./script.js",
-  "version": 23,
+  "version": 30,
   "iconUrl": "./icon.png",
   "id": "9fe6145b-5a4b-4e41-b05c-c65836d4910e",
   "packages": ["Http"],
@@ -52,6 +52,13 @@
     "cookiesToFind": ["cf_clearance", "_cfuvid"]
   },
   "changelog": {
+    "30": ["Fix: Re-enable LoginRequiredException in enable() so plugin prompts login on activation."],
+    "29": ["Feature: Channel content search now exposes sort order, release-date, duration, and content-type (Video/Audio/Picture/Text) filters via getSearchChannelContentsCapabilities."],
+    "28": ["Fix: Rewrite getSearchCapabilities using class constructors (ResultCapabilities/FilterGroup/FilterCapability) matching the soundcloud plugin pattern so filter UI renders."],
+    "27": ["Debug: Log when getSearchCapabilities is invoked."],
+    "26": ["Fix: getSearchCapabilities returns plain objects instead of non-existent ResultCapabilities/FilterGroup classes so the filter UI renders."],
+    "25": ["Fix: Declare VIDEOS as a search feed type so Grayjay renders the filter UI."],
+    "24": ["Feature: Search now supports sort order, release-date filter, and duration filter via getSearchCapabilities."],
     "23": ["Fix: Search suggestions now use /v3/content/search - one HTTP call per keystroke instead of 1+N."],
     "22": ["Fix: Global search now uses /v3/content/search endpoint - one HTTP call instead of N+1 fan-out across every creator."],
     "21": ["Fix: Home feed now correctly uses POST for batch content fetch, enabling pagination."],

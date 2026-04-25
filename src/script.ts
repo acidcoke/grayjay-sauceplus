@@ -18,6 +18,15 @@ import {
   SauceplusComment,
   ContentSearchResponse,
   ContentSearchDocument,
+  Filters,
+  FilterOptions,
+  FilterGroups,
+  OtherFilters,
+  SauceplusSearchType,
+  SauceplusChannelSearchType,
+  DateOptions,
+  DurationOptions,
+  ContentTypeOptions,
 } from "./types.js";
 
 const PLATFORM = "Sauceplus";
@@ -78,22 +87,20 @@ const local_source: SauceplusSource = {
   searchChannels,
   searchSuggestions,
   search,
+  getSearchCapabilities,
   searchChannelContents,
+  getSearchChannelContentsCapabilities,
 };
 init_source(local_source);
-function init_source<
-  ChannelTypes extends never,
-  SearchTypes extends never,
-  ChannelSearchTypes extends never,
->(
+function init_source<ChannelTypes extends never>(
   local_source: Source<
-    never,
-    never,
-    never,
-    never,
+    Filters,
+    FilterOptions,
+    FilterGroups,
+    OtherFilters,
+    SauceplusSearchType,
     ChannelTypes,
-    SearchTypes,
-    ChannelSearchTypes,
+    SauceplusChannelSearchType,
     Settings
   >,
 ) {
@@ -122,9 +129,9 @@ function enable(
   }
   local_settings = settings;
 
-  //if (!bridge.isLoggedIn()) {
-  //throw new LoginRequiredException("login to watch sauceplus");
-  //}
+  if (!bridge.isLoggedIn()) {
+    throw new LoginRequiredException("login to watch sauceplus");
+  }
 
   const client_id = local_http.getDefaultClient(true).clientId;
   if (client_id === undefined) {
@@ -158,7 +165,10 @@ function getHome(): ContentPager {
   const creators: Creator[] = JSON.parse(
     local_http.GET(CREATOR_SEARCH_URL, { "User-Agent": USER_AGENT }, true).body,
   );
-  return new HomePager(creators.map((c) => c.id), 20);
+  return new HomePager(
+    creators.map((c) => c.id),
+    20,
+  );
 }
 
 function create_thumbnails(thumbs: ParentImage | null): Thumbnails {
@@ -260,13 +270,13 @@ class HomePager extends ContentPager {
 
     const creators: Record<string, CreatorStatus> = {};
     let has_more = false;
-    for (const data of (response.lastElements ?? [])) {
+    for (const data of response.lastElements) {
       creators[data.creatorId] = data;
       has_more ||= data.moreFetchable;
     }
 
     super(
-      (response.blogPosts ?? []).map(create_platform_video).filter((x) => x !== null),
+      response.blogPosts.map(create_platform_video).filter((x) => x !== null),
       has_more,
     );
     this.creators = creators;
@@ -281,14 +291,18 @@ class HomePager extends ContentPager {
     const response: CreatorVideosResponse = JSON.parse(
       local_http.POST(
         LIST_URL,
-        JSON.stringify({ ids: this.creator_ids, limit: this.limit, fetchAfter }),
+        JSON.stringify({
+          ids: this.creator_ids,
+          limit: this.limit,
+          fetchAfter,
+        }),
         { "Content-Type": "application/json", "User-Agent": USER_AGENT },
         true,
       ).body,
     );
 
     let has_more = false;
-    for (const data of (response.lastElements ?? [])) {
+    for (const data of response.lastElements ?? []) {
       this.creators[data.creatorId] = data;
       has_more ||= data.moreFetchable;
     }
@@ -654,7 +668,8 @@ class SauceplusPlaybackTracker extends PlaybackTracker {
         true,
       ).body,
     );
-    const saved_pct = response.find((p) => p.id === this.post_id)?.progress ?? 0;
+    const saved_pct =
+      response.find((p) => p.id === this.post_id)?.progress ?? 0;
     const primary_duration = this.attachments[0]?.duration ?? 0;
     const saved_seconds = (saved_pct / 100) * primary_duration;
     this.last_seconds = Math.max(seconds, saved_seconds);
@@ -671,7 +686,11 @@ class SauceplusPlaybackTracker extends PlaybackTracker {
     for (const { id } of this.attachments) {
       local_http.POST(
         PROGRESS_URL,
-        JSON.stringify({ id, contentType: "video", progress: Math.floor(seconds) }),
+        JSON.stringify({
+          id,
+          contentType: "video",
+          progress: Math.floor(seconds),
+        }),
         { "Content-Type": "application/json", "User-Agent": USER_AGENT },
         true,
       );
@@ -712,11 +731,121 @@ function searchSuggestions(query: string): string[] {
   return [...new Set(resp.hits.map((h) => h.document.title))];
 }
 
-function search(query: string): ContentPager {
+function search(
+  query: string,
+  _type: SauceplusSearchType | null,
+  order: Order | null,
+  filters: OtherFilters | null,
+): ContentPager {
   if (!bridge.isLoggedIn()) {
     throw new LoginRequiredException("login to search sauceplus");
   }
-  return new GlobalSearchPager(query, 20);
+  return new GlobalSearchPager(query, 20, order, filters);
+}
+
+function getSearchCapabilities(): ResultCapabilities<
+  Filters,
+  FilterOptions,
+  FilterGroups,
+  SauceplusSearchType
+> {
+  log("getSearchCapabilities called");
+  return new ResultCapabilities<
+    Filters,
+    FilterOptions,
+    FilterGroups,
+    SauceplusSearchType
+  >(
+    [Type.Feed.Videos],
+    [Type.Order.Chronological, "Oldest"],
+    [
+      new FilterGroup(
+        "Upload Date",
+        [
+          new FilterCapability(
+            DateOptions.last_hour,
+            DateOptions.last_hour,
+            DateOptions.last_hour,
+          ),
+          new FilterCapability(
+            DateOptions.today,
+            DateOptions.today,
+            DateOptions.today,
+          ),
+          new FilterCapability(
+            DateOptions.last_week,
+            DateOptions.last_week,
+            DateOptions.last_week,
+          ),
+          new FilterCapability(
+            DateOptions.last_month,
+            DateOptions.last_month,
+            DateOptions.last_month,
+          ),
+          new FilterCapability(
+            DateOptions.last_year,
+            DateOptions.last_year,
+            DateOptions.last_year,
+          ),
+        ],
+        false,
+        "DATE_FILTER",
+      ),
+      new FilterGroup(
+        "Duration",
+        [
+          new FilterCapability(
+            DurationOptions.short,
+            DurationOptions.short,
+            DurationOptions.short,
+          ),
+          new FilterCapability(
+            DurationOptions.medium,
+            DurationOptions.medium,
+            DurationOptions.medium,
+          ),
+          new FilterCapability(
+            DurationOptions.long,
+            DurationOptions.long,
+            DurationOptions.long,
+          ),
+        ],
+        false,
+        "DURATION_FILTER",
+      ),
+    ],
+  );
+}
+
+function order_to_sort(order: Order | null): "ASC" | "DESC" | null {
+  if (order === null) return null;
+  if (order === "Oldest") return "ASC";
+  return "DESC";
+}
+
+function date_filter_to_from_date(v: DateOptions | undefined): string | null {
+  if (!v) return null;
+  const HOUR = 3_600_000;
+  const DAY = 24 * HOUR;
+  const offset: Record<DateOptions, number> = {
+    [DateOptions.last_hour]: HOUR,
+    [DateOptions.today]: DAY,
+    [DateOptions.last_week]: 7 * DAY,
+    [DateOptions.last_month]: 30 * DAY,
+    [DateOptions.last_year]: 365 * DAY,
+  };
+  const ms = offset[v];
+  return new Date(Date.now() - ms).toISOString();
+}
+
+function duration_filter_to_range(v: DurationOptions | undefined): {
+  min?: number;
+  max?: number;
+} {
+  if (v === DurationOptions.short) return { max: 240 };
+  if (v === DurationOptions.medium) return { min: 240, max: 1200 };
+  if (v === DurationOptions.long) return { min: 1200 };
+  return {};
 }
 
 class GlobalSearchPager extends ContentPager {
@@ -724,8 +853,10 @@ class GlobalSearchPager extends ContentPager {
   constructor(
     private readonly query: string,
     private readonly per_page: number,
+    private readonly order: Order | null,
+    private readonly filters: OtherFilters | null,
   ) {
-    const resp = GlobalSearchPager.fetch(query, 1, per_page);
+    const resp = GlobalSearchPager.fetch(query, 1, per_page, order, filters);
     super(
       resp.hits
         .map((h) => create_platform_video_from_search(h.document))
@@ -737,11 +868,26 @@ class GlobalSearchPager extends ContentPager {
     query: string,
     page: number,
     per_page: number,
+    order: Order | null,
+    filters: OtherFilters | null,
   ): ContentSearchResponse {
     const url = new URL(CONTENT_SEARCH_URL);
     url.searchParams.set("text", query);
     url.searchParams.set("page", page.toString());
     url.searchParams.set("perPage", per_page.toString());
+
+    const sort = order_to_sort(order);
+    if (sort !== null) url.searchParams.set("sort", sort);
+
+    const fromDate = date_filter_to_from_date(filters?.DATE_FILTER?.[0]);
+    if (fromDate !== null) url.searchParams.set("fromDate", fromDate);
+
+    const { min, max } = duration_filter_to_range(
+      filters?.DURATION_FILTER?.[0],
+    );
+    if (min !== undefined) url.searchParams.set("minDuration", String(min));
+    if (max !== undefined) url.searchParams.set("maxDuration", String(max));
+
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     return JSON.parse(
       local_http.GET(url.toString(), { "User-Agent": USER_AGENT }, true).body,
@@ -749,7 +895,13 @@ class GlobalSearchPager extends ContentPager {
   }
   override nextPage(this: GlobalSearchPager) {
     this.page += 1;
-    const resp = GlobalSearchPager.fetch(this.query, this.page, this.per_page);
+    const resp = GlobalSearchPager.fetch(
+      this.query,
+      this.page,
+      this.per_page,
+      this.order,
+      this.filters,
+    );
     this.results = resp.hits
       .map((h) => create_platform_video_from_search(h.document))
       .filter((x) => x !== null);
@@ -761,7 +913,14 @@ class GlobalSearchPager extends ContentPager {
   }
 }
 
-function searchChannelContents(channelUrl: string, query: string): ContentPager {
+function searchChannelContents(
+  channelUrl: string,
+  query: string,
+  _type: SauceplusChannelSearchType | null,
+  order: Order | null,
+  raw_filters: Readonly<Record<Filters, string[]>> | null,
+): ContentPager {
+  const filters = raw_filters as unknown as OtherFilters | null;
   if (!bridge.isLoggedIn()) {
     throw new LoginRequiredException("login to search sauceplus");
   }
@@ -775,27 +934,162 @@ function searchChannelContents(channelUrl: string, query: string): ContentPager 
   const response: [Creator] = JSON.parse(
     local_http.GET(api_url.toString(), {}, true).body,
   );
-  return new SearchContentPager(response[0].id, query, 20);
+  return new SearchContentPager(response[0].id, query, 20, order, filters);
+}
+
+function getSearchChannelContentsCapabilities(): ResultCapabilities<
+  Filters,
+  FilterOptions,
+  FilterGroups,
+  SauceplusChannelSearchType
+> {
+  return new ResultCapabilities<
+    Filters,
+    FilterOptions,
+    FilterGroups,
+    SauceplusChannelSearchType
+  >(
+    [Type.Feed.Videos],
+    [Type.Order.Chronological, "Oldest"],
+    [
+      new FilterGroup(
+        "Upload Date",
+        [
+          new FilterCapability(
+            DateOptions.last_hour,
+            DateOptions.last_hour,
+            DateOptions.last_hour,
+          ),
+          new FilterCapability(
+            DateOptions.today,
+            DateOptions.today,
+            DateOptions.today,
+          ),
+          new FilterCapability(
+            DateOptions.last_week,
+            DateOptions.last_week,
+            DateOptions.last_week,
+          ),
+          new FilterCapability(
+            DateOptions.last_month,
+            DateOptions.last_month,
+            DateOptions.last_month,
+          ),
+          new FilterCapability(
+            DateOptions.last_year,
+            DateOptions.last_year,
+            DateOptions.last_year,
+          ),
+        ],
+        false,
+        "DATE_FILTER",
+      ),
+      new FilterGroup(
+        "Duration",
+        [
+          new FilterCapability(
+            DurationOptions.short,
+            DurationOptions.short,
+            DurationOptions.short,
+          ),
+          new FilterCapability(
+            DurationOptions.medium,
+            DurationOptions.medium,
+            DurationOptions.medium,
+          ),
+          new FilterCapability(
+            DurationOptions.long,
+            DurationOptions.long,
+            DurationOptions.long,
+          ),
+        ],
+        false,
+        "DURATION_FILTER",
+      ),
+      new FilterGroup(
+        "Content Type",
+        [
+          new FilterCapability(
+            ContentTypeOptions.video,
+            ContentTypeOptions.video,
+            ContentTypeOptions.video,
+          ),
+          new FilterCapability(
+            ContentTypeOptions.audio,
+            ContentTypeOptions.audio,
+            ContentTypeOptions.audio,
+          ),
+          new FilterCapability(
+            ContentTypeOptions.picture,
+            ContentTypeOptions.picture,
+            ContentTypeOptions.picture,
+          ),
+          new FilterCapability(
+            ContentTypeOptions.text,
+            ContentTypeOptions.text,
+            ContentTypeOptions.text,
+          ),
+        ],
+        true,
+        "CONTENT_TYPE_FILTER",
+      ),
+    ],
+  );
 }
 
 class SearchContentPager extends ContentPager {
-  constructor(creator_id: string, query: string, limit: number) {
+  constructor(
+    creator_id: string,
+    query: string,
+    limit: number,
+    order: Order | null,
+    filters: OtherFilters | null,
+  ) {
     const url = new URL(CREATOR_CONTENT_URL);
     url.searchParams.set("id", creator_id);
     url.searchParams.set("search", query);
     url.searchParams.set("limit", limit.toString());
+
+    const sort = order_to_sort(order);
+    if (sort !== null) url.searchParams.set("sort", sort);
+
+    const fromDate = date_filter_to_from_date(filters?.DATE_FILTER?.[0]);
+    if (fromDate !== null) url.searchParams.set("fromDate", fromDate);
+
+    const { min, max } = duration_filter_to_range(
+      filters?.DURATION_FILTER?.[0],
+    );
+    if (min !== undefined) url.searchParams.set("fromDuration", String(min));
+    if (max !== undefined) url.searchParams.set("toDuration", String(max));
+
+    const content_types = filters?.CONTENT_TYPE_FILTER ?? [];
+    for (const ct of content_types) {
+      if (ct === ContentTypeOptions.video)
+        url.searchParams.set("hasVideo", "true");
+      if (ct === ContentTypeOptions.audio)
+        url.searchParams.set("hasAudio", "true");
+      if (ct === ContentTypeOptions.picture)
+        url.searchParams.set("hasPicture", "true");
+      if (ct === ContentTypeOptions.text)
+        url.searchParams.set("hasText", "true");
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const raw: CreatorVideosResponse | Post[] = JSON.parse(
       local_http.GET(url.toString(), { "User-Agent": USER_AGENT }, true).body,
     );
-    const posts: Post[] = Array.isArray(raw) ? raw : (raw.blogPosts ?? []);
+    const posts: Post[] = Array.isArray(raw) ? raw : raw.blogPosts;
     super(
       posts.map(create_platform_video).filter((x) => x !== null),
       false,
     );
   }
-  override nextPage(): ContentPager { return this; }
-  override hasMorePagers(): boolean { return false; }
+  override nextPage(): ContentPager {
+    return this;
+  }
+  override hasMorePagers(): boolean {
+    return false;
+  }
 }
 
 function searchChannels(query: string): ChannelPager {
@@ -812,11 +1106,11 @@ class CreatorSearchPager extends ChannelPager {
     );
     super(
       results.map((creator) => {
-        const defaultChan = creator.channels?.find(
+        const defaultChan = creator.channels.find(
           (c) => c.id === creator.defaultChannel,
         );
         const chanUrlname =
-          defaultChan?.urlname ?? creator.channels?.[0]?.urlname ?? "main";
+          defaultChan?.urlname ?? creator.channels[0]?.urlname ?? "main";
         return new PlatformChannel({
           id: new PlatformID(PLATFORM, creator.id, plugin.config.id),
           name: creator.title,
@@ -857,7 +1151,7 @@ function getUserSubscriptions(): string[] {
       local_http.GET(info_url.toString(), { "User-Agent": USER_AGENT }, true)
         .body,
     );
-    if (!creator.channels?.length) {
+    if (!creator.channels.length) {
       const defaultChan = creator.defaultChannel;
       return [
         PLATFORM_URL + "/channel/" + creator.urlname + "/home/" + defaultChan,
