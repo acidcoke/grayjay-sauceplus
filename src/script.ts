@@ -872,6 +872,7 @@ class GlobalSearchPager extends ContentPager {
     filters: OtherFilters | null,
   ): ContentSearchResponse {
     const url = new URL(CONTENT_SEARCH_URL);
+
     url.searchParams.set("text", query);
     url.searchParams.set("page", page.toString());
     url.searchParams.set("perPage", per_page.toString());
