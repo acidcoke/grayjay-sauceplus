@@ -8,7 +8,7 @@
   "sourceUrl": "https://github.com/acidcoke/grayjay-sauceplus/releases/latest/download/config.json",
   "repositoryUrl": "https://github.com/acidcoke/grayjay-sauceplus",
   "scriptUrl": "./script.js",
-  "version": 30,
+  "version": 31,
   "iconUrl": "./icon.png",
   "id": "9fe6145b-5a4b-4e41-b05c-c65836d4910e",
   "packages": ["Http"],
@@ -42,16 +42,15 @@
   ],
   "authentication": {
     "loginUrl": "https://www.sauceplus.com/login",
-    "userAgent": "Mozilla/5.0 (Linux; Android 14; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Mobile Safari/537.36",
-    "cookiesToFind": ["muxData", "__Host-sp-sess"],
+    "cookiesToFind": ["__Host-sp-sess"],
     "loginWarning": "Enter password AND 2FA code. If Turnstile captcha fails, try Discord login."
   },
 
   "captcha": {
-    "userAgent": "Mozilla/5.0 (Linux; Android 14; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Mobile Safari/537.36",
     "cookiesToFind": ["cf_clearance", "_cfuvid"]
   },
   "changelog": {
+    "31": ["Fix: Login WebView no longer forces a hard-coded Chrome 133 user agent, which made Cloudflare/Turnstile fail; login no longer waits for the muxData player cookie."],
     "30": ["Fix: Re-enable LoginRequiredException in enable() so plugin prompts login on activation."],
     "29": ["Feature: Channel content search now exposes sort order, release-date, duration, and content-type (Video/Audio/Picture/Text) filters via getSearchChannelContentsCapabilities."],
     "28": ["Fix: Rewrite getSearchCapabilities using class constructors (ResultCapabilities/FilterGroup/FilterCapability) matching the soundcloud plugin pattern so filter UI renders."],
